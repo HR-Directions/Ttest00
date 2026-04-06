@@ -1,4 +1,4 @@
-
+```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -285,11 +285,10 @@
             try {
                 let firebaseConfig;
                 
-                // استخدام الإعدادات التلقائية للمنصة إذا كانت متوفرة، وإلا نستخدم إعداداتك بعد إصلاح الخطأ
                 if (typeof __firebase_config !== 'undefined') {
                     firebaseConfig = JSON.parse(__firebase_config);
                 } else {
-                    // تم إصلاح الخطأ هنا: إضافة الفاصلة (,) وحذف التكرار
+                    // بيانات مؤقتة غير صحيحة، يجب تغييرها لتعمل المزامنة بشكل حقيقي
                     firebaseConfig = {
                         databaseURL: "https://delivery-2-1d699-default-rtdb.firebaseio.com/",
                         projectId: "delivery-2-1d699",
@@ -322,13 +321,13 @@
                 });
             } catch (err) {
                 console.error("Firebase Init Error:", err);
-                hideLoader(); // إخفاء شاشة التحميل في حالة وجود خطأ
-                showToast("خطأ في الاتصال بقاعدة البيانات.", "error");
+                hideLoader(); 
+                showToast("تعذر الاتصال بقاعدة البيانات. يمكنك الدخول للمعاينة بحساب 1234", "error");
+                switchView('view-login'); // التبديل لشاشة الدخول للمعاينة
             }
         };
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-delivery-app';
-        // Utility to get proper path per instructions
         const getCol = (name) => collection(db, 'artifacts', appId, 'public', 'data', name);
 
         // UI Helpers
@@ -432,7 +431,6 @@
                 }
             });
         };
-        // Expose to window for inline onclicks
         window.switchViewProxy = switchView;
 
         // Logout
@@ -448,20 +446,17 @@
         const startListeners = () => {
             if (!firebaseUser) return;
 
-            // Users Listener
             onSnapshot(getCol('users'), (snap) => {
                 const users = [];
                 snap.forEach(doc => users.push({ _id: doc.id, ...doc.data() }));
                 allUsers = users;
                 
-                // Auto create admin if DB is empty
                 if (allUsers.length === 0) {
                     addDoc(getCol('users'), {
                         name: 'مدير النظام', code: '1234', password: '1234', role: 'manager', branch: '', phone: '', isActive: false
                     });
                 }
                 
-                // Update current user data if logged in (e.g. attendance changed remotely)
                 if (currentUser) {
                     const updatedMe = allUsers.find(u => u._id === currentUser._id);
                     if (updatedMe) currentUser = updatedMe;
@@ -470,20 +465,15 @@
                 updateBranchesList();
                 if (currentViewId === 'view-admin') renderAdminUsers();
                 if (currentViewId === 'view-delivery') renderDeliveryStatus();
-                if (currentViewId === 'view-branch') renderBranchOrders(); // for active delivery dropdowns
+                if (currentViewId === 'view-branch') renderBranchOrders();
             }, (err) => { console.error("Users Listener Error:", err); });
 
-            // Orders Listener
             onSnapshot(getCol('orders'), (snap) => {
                 const orders = [];
                 snap.forEach(doc => orders.push({ _id: doc.id, ...doc.data() }));
-                // Sort by creation time desc
                 allOrders = orders.sort((a,b) => b.tsCreated - a.tsCreated);
                 
-                if (currentViewId === 'view-branch') {
-                    renderBranchOrders();
-                    renderCashier();
-                }
+                if (currentViewId === 'view-branch') { renderBranchOrders(); renderCashier(); }
                 if (currentViewId === 'view-delivery') renderDeliveryOrders();
                 if (currentViewId === 'view-reports') renderReports();
             }, (err) => { console.error("Orders Listener Error:", err); });
@@ -492,7 +482,6 @@
             switchView('view-login');
         };
 
-        // Render Triggers
         const renderCurrentView = () => {
             if (currentViewId === 'view-admin') renderAdminUsers();
             if (currentViewId === 'view-branch') { renderBranchOrders(); renderCashier(); }
@@ -503,10 +492,23 @@
         // ================= LOGIN LOGIC =================
         document.getElementById('login-form').addEventListener('submit', (e) => {
             e.preventDefault();
-            const code = document.getElementById('login-code').value;
-            const pass = document.getElementById('login-password').value;
+            const code = document.getElementById('login-code').value.trim();
+            const pass = document.getElementById('login-password').value.trim();
             
-            const user = allUsers.find(u => u.code === code && u.password === pass);
+            let user = allUsers.find(u => u.code === code && u.password === pass);
+            
+            // حساب الإدارة الاحتياطي (لضمان عمل النظام حتى لو فشل الاتصال بقاعدة البيانات)
+            if (!user && code === '1234' && pass === '1234') {
+                user = {
+                    _id: 'admin_fallback',
+                    name: 'مدير النظام',
+                    code: '1234',
+                    role: 'manager',
+                    branch: '',
+                    isActive: true
+                };
+            }
+
             if (user) {
                 currentUser = user;
                 setupNav();
@@ -517,17 +519,15 @@
         });
 
         // ================= ADMIN LOGIC =================
-        // Form dependencies toggles
         document.getElementById('usr-role').addEventListener('change', (e) => {
             const val = e.target.value;
             document.getElementById('div-usr-phone').classList.toggle('hidden', val !== 'delivery');
             document.getElementById('div-usr-branch').classList.toggle('hidden', !['branch', 'employee'].includes(val));
         });
 
-        // Add User
         document.getElementById('form-add-user').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if(!firebaseUser) return;
+            if(!firebaseUser) { showToast('تحتاج لربط قاعدة البيانات لحفظ الموظفين', 'error'); return; }
             const code = document.getElementById('usr-code').value;
             if (allUsers.some(u => u.code === code)) {
                 showToast('هذا الكود مستخدم مسبقاً', 'error');
@@ -541,7 +541,7 @@
                     role: document.getElementById('usr-role').value,
                     phone: document.getElementById('usr-phone').value || '',
                     branch: document.getElementById('usr-branch').value || '',
-                    isActive: false // Default for delivery
+                    isActive: false 
                 });
                 showToast('تم تسجيل المستخدم بنجاح');
                 e.target.reset();
@@ -552,10 +552,9 @@
             }
         });
 
-        // Add Order
         document.getElementById('form-add-order').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if(!firebaseUser) return;
+            if(!firebaseUser) { showToast('تحتاج لربط قاعدة البيانات لحفظ الأوردر', 'error'); return; }
             try {
                 await addDoc(getCol('orders'), {
                     orderId: document.getElementById('ord-id').value,
@@ -581,6 +580,10 @@
 
         const renderAdminUsers = () => {
             const tbody = document.getElementById('admin-users-tbody');
+            if (allUsers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-gray-500">لا يوجد مستخدمين لعرضهم أو الاتصال بقاعدة البيانات مفقود</td></tr>';
+                return;
+            }
             tbody.innerHTML = allUsers.map(u => `
                 <tr class="hover:bg-gray-50">
                     <td class="p-2 font-bold text-gray-800">${u.name}</td>
@@ -598,7 +601,6 @@
 
         const updateBranchesList = () => {
             const branches = [...new Set(allUsers.filter(u => u.branch).map(u => u.branch))];
-            // Also collect branches from orders just in case
             allOrders.forEach(o => { if(o.branch && !branches.includes(o.branch)) branches.push(o.branch); });
             
             const dl = document.getElementById('branches-list');
@@ -611,13 +613,11 @@
         };
 
         // ================= BRANCH / EMPLOYEE LOGIC =================
-        // Branch Filter for Manager
         document.getElementById('filter-branch-select').addEventListener('change', () => {
             renderBranchOrders();
             renderCashier();
         });
 
-        // Tabs Logic
         document.getElementById('tab-btn-active').addEventListener('click', (e) => {
             e.target.classList.replace('bg-gray-200', 'bg-blue-600');
             e.target.classList.replace('text-gray-700', 'text-white');
@@ -646,7 +646,7 @@
                 const filter = document.getElementById('filter-branch-select').value;
                 document.getElementById('manager-branch-filter').classList.remove('hidden');
                 if (filter !== 'all') branchName = filter;
-                else branchName = null; // show all
+                else branchName = null; 
             } else {
                 document.getElementById('manager-branch-filter').classList.add('hidden');
             }
@@ -733,7 +733,7 @@
         };
 
         window.updateOrderStatus = async (docId, newStatus, extraData = {}) => {
-            if(!firebaseUser) return;
+            if(!firebaseUser) { showToast('تحتاج لربط قاعدة البيانات لتحديث الأوردر', 'error'); return; }
             const updates = { status: newStatus, ...extraData };
             if(newStatus === 'preparing') updates.tsPrepStart = Date.now();
             if(newStatus === 'delivered') updates.tsDelivered = Date.now();
@@ -772,12 +772,12 @@
         };
 
         document.getElementById('delivery-attendance-toggle').addEventListener('change', async (e) => {
-            if(!firebaseUser) return;
+            if(!firebaseUser) { showToast('تحتاج لربط قاعدة البيانات', 'error'); e.target.checked = !e.target.checked; return; }
             try {
                 await updateDoc(doc(getCol('users'), currentUser._id), { isActive: e.target.checked });
                 showToast(e.target.checked ? 'تم تسجيل الحضور' : 'تم تسجيل الانصراف');
             } catch(err) {
-                e.target.checked = !e.target.checked; // revert
+                e.target.checked = !e.target.checked; 
             }
         });
 
@@ -825,7 +825,6 @@
             };
 
             const onError = (error) => {
-                // Fallback if location fails or is denied so the system doesn't break
                 window.updateOrderStatus(docId, 'delivered', { location: 'تعذر التحديد' });
                 showToast('تم تأكيد التسليم (تعذر تحديد الموقع الدقيق)', 'error');
             };
@@ -840,7 +839,6 @@
         // ================= REPORTS LOGIC =================
         const renderReports = () => {
             const tbody = document.getElementById('reports-tbody');
-            // Filter based on role
             let reportOrders = allOrders;
             if (currentUser.role === 'branch' || currentUser.role === 'employee') {
                 reportOrders = allOrders.filter(o => o.branch === currentUser.branch);
@@ -875,3 +873,6 @@
     </script>
 </body>
 </html>
+
+
+```

@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة التوصيل والفروع</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .toast { transition: opacity 0.3s, transform 0.3s; }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Full Screen Loader -->
+    <div id="global-loader" class="fixed inset-0 bg-white bg-opacity-90 z-[100] flex flex-col items-center justify-center">
+        <div class="loader mb-4"></div>
+        <p class="text-lg font-semibold text-blue-600">جاري تهيئة النظام والاتصال بقاعدة البيانات...</p>
+    </div>
+
+    <!-- Navbar -->
+    <nav id="navbar" class="bg-blue-700 text-white shadow-lg hidden">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="font-bold text-xl flex items-center gap-2">
+                <i class="fa-solid fa-truck-fast"></i> إدارة التوصيل
+            </div>
+            <div class="flex items-center gap-4">
+                <span id="nav-user-name" class="font-semibold text-blue-200"></span>
+                <span id="nav-user-role" class="text-xs bg-blue-800 px-2 py-1 rounded"></span>
+                <div id="nav-links" class="hidden md:flex gap-4 ml-4">
+                    <!-- Dynamic Links -->
+                </div>
+                <button id="btn-logout" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-sm transition shadow">
+                    <i class="fa-solid fa-right-from-bracket"></i> خروج
+                </button>
+            </div>
+        </div>
+        <!-- Mobile Nav -->
+        <div id="mobile-nav-links" class="md:hidden bg-blue-800 flex overflow-x-auto p-2 gap-2 text-sm">
+            <!-- Dynamic Mobile Links -->
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="container mx-auto p-4 mb-10">
+
+        <!-- ================= LOGIN VIEW ================= -->
+        <div id="view-login" class="max-w-md mx-auto mt-20 glass-panel rounded-xl shadow-xl overflow-hidden hidden">
+            <div class="bg-blue-600 p-6 text-center text-white">
+                <i class="fa-solid fa-user-shield text-4xl mb-2"></i>
+                <h1 class="text-2xl font-bold">تسجيل الدخول</h1>
+                <p class="text-blue-200 text-sm mt-1">أدخل الكود وكلمة المرور للمتابعة</p>
+            </div>
+            <div class="p-6">
+                <form id="login-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">كود المستخدم</label>
+                        <input type="text" id="login-code" class="w-full border rounded-lg p-2 focus:ring focus:ring-blue-200 outline-none" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">كلمة المرور</label>
+                        <input type="password" id="login-password" class="w-full border rounded-lg p-2 focus:ring focus:ring-blue-200 outline-none" required>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition shadow-md">دخول</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ================= ADMIN VIEW ================= -->
+        <div id="view-admin" class="hidden space-y-6">
+            <h2 class="text-2xl font-bold text-gray-800 border-b pb-2"><i class="fa-solid fa-user-tie text-blue-600"></i> لوحة الإدارة</h2>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Add Order Form -->
+                <div class="glass-panel p-5 rounded-xl shadow-md border border-gray-100">
+                    <h3 class="text-lg font-bold mb-4 text-blue-800"><i class="fa-solid fa-plus-circle"></i> إضافة أوردر جديد</h3>
+                    <form id="form-add-order" class="space-y-3">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-xs text-gray-500">رقم الأوردر</label>
+                                <input type="text" id="ord-id" class="w-full border rounded p-2 text-sm" required>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500">اسم العميل</label>
+                                <input type="text" id="ord-client" class="w-full border rounded p-2 text-sm" required>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500">القيمة (جنية)</label>
+                                <input type="number" id="ord-value" class="w-full border rounded p-2 text-sm" required>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500">المنطقة</label>
+                                <input type="text" id="ord-area" class="w-full border rounded p-2 text-sm" required>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500">الفرع</label>
+                                <input type="text" id="ord-branch" placeholder="مثال: مدينة نصر" class="w-full border rounded p-2 text-sm" required list="branches-list">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500">طريقة الدفع</label>
+                                <select id="ord-payment" class="w-full border rounded p-2 text-sm" required>
+                                    <option value="كاش">كاش</option>
+                                    <option value="فيزا">فيزا</option>
+                                    <option value="انستاباي">انستاباي</option>
+                                    <option value="محفظة">محفظة إلكترونية</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white p-2 rounded shadow transition mt-2">إضافة الأوردر</button>
+                    </form>
+                </div>
+
+                <!-- Add Employee Form -->
+                <div class="glass-panel p-5 rounded-xl shadow-md border border-gray-100">
+                    <h3 class="text-lg font-bold mb-4 text-blue-800"><i class="fa-solid fa-user-plus"></i> إضافة موظف / فرع / مندوب</h3>
+                    <form id="form-add-user" class="space-y-3">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-xs text-gray-500">الاسم</label>
+                                <input type="text" id="usr-name" class="w-full border rounded p-2 text-sm" required>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500">كود الدخول</label>
+                                <input type="text" id="usr-code" class="w-full border rounded p-2 text-sm" required>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500">كلمة المرور</label>
+                                <input type="text" id="usr-pass" class="w-full border rounded p-2 text-sm" required>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500">الفئة</label>
+                                <select id="usr-role" class="w-full border rounded p-2 text-sm" required>
+                                    <option value="manager">مسؤول (إدارة)</option>
+                                    <option value="branch">فرع</option>
+                                    <option value="employee">موظف</option>
+                                    <option value="delivery">دليفري</option>
+                                </select>
+                            </div>
+                            <div id="div-usr-phone" class="hidden col-span-2 md:col-span-1">
+                                <label class="text-xs text-gray-500">رقم الهاتف (للمندوب)</label>
+                                <input type="text" id="usr-phone" class="w-full border rounded p-2 text-sm">
+                            </div>
+                            <div id="div-usr-branch" class="hidden col-span-2 md:col-span-1">
+                                <label class="text-xs text-gray-500">اسم الفرع (للموظف/الفرع)</label>
+                                <input type="text" id="usr-branch" class="w-full border rounded p-2 text-sm" list="branches-list">
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white p-2 rounded shadow transition mt-2">تسجيل المستخدم</button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Users List (Admin Only) -->
+            <div class="glass-panel p-5 rounded-xl shadow-md border border-gray-100 overflow-x-auto">
+                <h3 class="text-lg font-bold mb-4 text-gray-700">المستخدمين المسجلين</h3>
+                <table class="w-full text-sm text-right">
+                    <thead class="bg-gray-100 text-gray-600">
+                        <tr>
+                            <th class="p-2 rounded-tr-lg">الاسم</th>
+                            <th class="p-2">الكود</th>
+                            <th class="p-2">الفئة</th>
+                            <th class="p-2">الفرع</th>
+                            <th class="p-2 rounded-tl-lg">حالة الحضور (للمناديب)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-users-tbody" class="divide-y"></tbody>
+                </table>
+            </div>
+            
+            <datalist id="branches-list"></datalist>
+        </div>
+
+        <!-- ================= BRANCH / EMPLOYEE VIEW ================= -->
+        <div id="view-branch" class="hidden space-y-6">
+            <div class="flex flex-col md:flex-row justify-between items-center border-b pb-2 gap-4">
+                <h2 class="text-2xl font-bold text-gray-800"><i class="fa-solid fa-store text-blue-600"></i> إدارة الأوردرات</h2>
+                <div id="manager-branch-filter" class="hidden flex items-center gap-2">
+                    <label class="text-sm font-bold">تحديد الفرع للعرض:</label>
+                    <select id="filter-branch-select" class="border rounded p-1 text-sm bg-white min-w-[150px]">
+                        <option value="all">كل الفروع</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Tab Buttons -->
+            <div class="flex gap-2 mb-4">
+                <button id="tab-btn-active" class="flex-1 bg-blue-600 text-white py-2 rounded-lg font-bold shadow transition">الأوردرات الحالية</button>
+                <button id="tab-btn-cashier" class="flex-1 bg-gray-200 text-gray-700 hover:bg-gray-300 py-2 rounded-lg font-bold shadow transition"><i class="fa-solid fa-cash-register"></i> شاشة الكاشير</button>
+            </div>
+
+            <!-- Active Orders Tab -->
+            <div id="tab-active-orders" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="branch-orders-container">
+                <!-- Orders will be generated here -->
+            </div>
+
+            <!-- Cashier Tab -->
+            <div id="tab-cashier" class="hidden">
+                <div class="glass-panel p-5 rounded-xl shadow-md border border-gray-100 overflow-x-auto">
+                    <h3 class="text-lg font-bold mb-4 text-green-700"><i class="fa-solid fa-check-double"></i> الأوردرات التي تم تسليمها (الكاشير)</h3>
+                    <table class="w-full text-sm text-right">
+                        <thead class="bg-gray-100 text-gray-600">
+                            <tr>
+                                <th class="p-2 rounded-tr-lg">الأوردر</th>
+                                <th class="p-2">العميل</th>
+                                <th class="p-2">المندوب</th>
+                                <th class="p-2">القيمة</th>
+                                <th class="p-2">الدفع</th>
+                                <th class="p-2 rounded-tl-lg">وقت التسليم</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cashier-tbody" class="divide-y"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= DELIVERY (FORUM) VIEW ================= -->
+        <div id="view-delivery" class="hidden space-y-6">
+            <div class="glass-panel p-6 rounded-xl shadow-md text-center border-t-4 border-blue-500">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">منصة المناديب</h2>
+                <div class="flex justify-center items-center gap-4 mt-4">
+                    <span id="delivery-status-text" class="text-lg font-bold text-red-500">غير متصل (خروج)</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="delivery-attendance-toggle" class="sr-only peer">
+                        <div class="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-500"></div>
+                    </label>
+                </div>
+                <p class="text-xs text-gray-500 mt-2">يجب تسجيل الحضور لتتمكن الفروع من إسناد الأوردرات لك.</p>
+            </div>
+
+            <h3 class="text-xl font-bold text-gray-800 mt-6 border-b pb-2">الأوردرات المسندة لك</h3>
+            <div id="delivery-orders-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Delivery orders here -->
+            </div>
+        </div>
+
+        <!-- ================= REPORTS VIEW ================= -->
+        <div id="view-reports" class="hidden space-y-6">
+            <h2 class="text-2xl font-bold text-gray-800 border-b pb-2"><i class="fa-solid fa-chart-line text-blue-600"></i> التقارير الشاملة</h2>
+            <div class="glass-panel p-5 rounded-xl shadow-md border border-gray-100 overflow-x-auto">
+                <table class="w-full text-sm text-right">
+                    <thead class="bg-gray-800 text-white">
+                        <tr>
+                            <th class="p-3 rounded-tr-lg">الأوردر</th>
+                            <th class="p-3">الفرع</th>
+                            <th class="p-3">العميل</th>
+                            <th class="p-3">المندوب</th>
+                            <th class="p-3">القيمة</th>
+                            <th class="p-3">الحالة</th>
+                            <th class="p-3">زمن التجهيز</th>
+                            <th class="p-3 rounded-tl-lg">زمن التوصيل</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reports-tbody" class="divide-y bg-white"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Scripts (Firebase + Logic) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, updateDoc, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global State
+        let db, auth;
+        let currentUser = null; // Our app's user object from Firestore
+        let firebaseUser = null; // Firebase Auth user
+        let allUsers = [];
+        let allOrders = [];
+        let currentViewId = 'view-login';
+
+        // Init Firebase
+        const initFirebase = async () => {
+            try {
+                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+                    // Fallback dummy config if not in environment
+                    apiKey: "dummy", authDomain: "dummy", projectId: "dummy", storageBucket: "dummy", messagingSenderId: "dummy", appId: "dummy"
+                };
+                
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // Auth
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                onAuthStateChanged(auth, (user) => {
+                    firebaseUser = user;
+                    if (user) {
+                        startListeners();
+                    }
+                });
+            } catch (err) {
+                console.error("Firebase Init Error:", err);
+                showToast("خطأ في الاتصال بالخادم.", "error");
+            }
+        };
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-delivery-app';
+        // Utility to get proper path per instructions
+        const getCol = (name) => collection(db, 'artifacts', appId, 'public', 'data', name);
+
+        // UI Helpers
+        const showToast = (msg, type = 'success') => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const color = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+            toast.className = `toast ${color} text-white px-6 py-3 rounded-lg shadow-lg font-bold flex items-center gap-2`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-check-circle' : 'fa-triangle-exclamation'}"></i> ${msg}`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(-20px)'; }, 3000);
+            setTimeout(() => toast.remove(), 3300);
+        };
+
+        const hideLoader = () => document.getElementById('global-loader').style.display = 'none';
+
+        const switchView = (viewId) => {
+            document.querySelectorAll('main > div').forEach(el => el.classList.add('hidden'));
+            document.getElementById(viewId).classList.remove('hidden');
+            currentViewId = viewId;
+            renderCurrentView();
+            updateNavActiveState(viewId);
+        };
+
+        const formatTimeDiff = (ms) => {
+            if (!ms || ms < 0) return '-';
+            const mins = Math.floor(ms / 60000);
+            if (mins < 60) return `${mins} دقيقة`;
+            return `${Math.floor(mins / 60)} س و ${mins % 60} د`;
+        };
+
+        const formatDate = (ts) => {
+            if (!ts) return '-';
+            const d = new Date(ts);
+            return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute:'2-digit' });
+        };
+
+        const roleNames = {
+            'manager': 'مسؤول', 'branch': 'فرع', 'employee': 'موظف', 'delivery': 'مندوب توصيل'
+        };
+
+        const statusNames = {
+            'pending': 'قيد الانتظار', 'preparing': 'جاري التجهيز', 'out': 'خرج للتوصيل', 'delivered': 'تم التسليم'
+        };
+
+        const statusColors = {
+            'pending': 'bg-yellow-100 text-yellow-800', 
+            'preparing': 'bg-blue-100 text-blue-800', 
+            'out': 'bg-purple-100 text-purple-800', 
+            'delivered': 'bg-green-100 text-green-800'
+        };
+
+        // DOM Elements
+        const navbar = document.getElementById('navbar');
+        const navLinks = document.getElementById('nav-links');
+        const mobileNavLinks = document.getElementById('mobile-nav-links');
+
+        // Setup Navigation based on Role
+        const setupNav = () => {
+            if (!currentUser) {
+                navbar.classList.add('hidden');
+                return;
+            }
+            navbar.classList.remove('hidden');
+            document.getElementById('nav-user-name').innerText = currentUser.name;
+            document.getElementById('nav-user-role').innerText = roleNames[currentUser.role];
+            
+            let linksHtml = '';
+            const addLink = (id, icon, text) => {
+                linksHtml += `<a href="#" onclick="window.switchViewProxy('${id}')" class="nav-btn hover:text-blue-300 font-semibold px-2 py-1 rounded" data-target="${id}"><i class="${icon}"></i> ${text}</a>`;
+            };
+
+            if (currentUser.role === 'manager') {
+                addLink('view-admin', 'fa-solid fa-user-tie', 'الإدارة');
+                addLink('view-branch', 'fa-solid fa-store', 'الفروع والكاشير');
+                addLink('view-reports', 'fa-solid fa-chart-line', 'التقارير');
+            } else if (currentUser.role === 'branch' || currentUser.role === 'employee') {
+                addLink('view-branch', 'fa-solid fa-store', 'الأوردرات والكاشير');
+                addLink('view-reports', 'fa-solid fa-chart-line', 'التقارير');
+            } else if (currentUser.role === 'delivery') {
+                addLink('view-delivery', 'fa-solid fa-motorcycle', 'منصة التوصيل');
+            }
+
+            navLinks.innerHTML = linksHtml;
+            mobileNavLinks.innerHTML = linksHtml;
+
+            // Default views
+            if (currentUser.role === 'manager') switchView('view-admin');
+            else if (currentUser.role === 'branch' || currentUser.role === 'employee') switchView('view-branch');
+            else if (currentUser.role === 'delivery') switchView('view-delivery');
+        };
+
+        const updateNavActiveState = (viewId) => {
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if(btn.dataset.target === viewId) {
+                    btn.classList.add('bg-blue-800');
+                    btn.classList.remove('hover:text-blue-300');
+                } else {
+                    btn.classList.remove('bg-blue-800');
+                    btn.classList.add('hover:text-blue-300');
+                }
+            });
+        };
+        // Expose to window for inline onclicks
+        window.switchViewProxy = switchView;
+
+        // Logout
+        document.getElementById('btn-logout').addEventListener('click', () => {
+            currentUser = null;
+            document.getElementById('login-form').reset();
+            switchView('view-login');
+            navbar.classList.add('hidden');
+            showToast('تم تسجيل الخروج');
+        });
+
+        // Listeners
+        const startListeners = () => {
+            if (!firebaseUser) return;
+
+            // Users Listener
+            onSnapshot(getCol('users'), (snap) => {
+                const users = [];
+                snap.forEach(doc => users.push({ _id: doc.id, ...doc.data() }));
+                allUsers = users;
+                
+                // Auto create admin if DB is empty
+                if (allUsers.length === 0) {
+                    addDoc(getCol('users'), {
+                        name: 'مدير النظام', code: '1234', password: '1234', role: 'manager', branch: '', phone: '', isActive: false
+                    });
+                }
+                
+                // Update current user data if logged in (e.g. attendance changed remotely)
+                if (currentUser) {
+                    const updatedMe = allUsers.find(u => u._id === currentUser._id);
+                    if (updatedMe) currentUser = updatedMe;
+                }
+
+                updateBranchesList();
+                if (currentViewId === 'view-admin') renderAdminUsers();
+                if (currentViewId === 'view-delivery') renderDeliveryStatus();
+                if (currentViewId === 'view-branch') renderBranchOrders(); // for active delivery dropdowns
+            }, (err) => { console.error("Users Listener Error:", err); });
+
+            // Orders Listener
+            onSnapshot(getCol('orders'), (snap) => {
+                const orders = [];
+                snap.forEach(doc => orders.push({ _id: doc.id, ...doc.data() }));
+                // Sort by creation time desc
+                allOrders = orders.sort((a,b) => b.tsCreated - a.tsCreated);
+                
+                if (currentViewId === 'view-branch') {
+                    renderBranchOrders();
+                    renderCashier();
+                }
+                if (currentViewId === 'view-delivery') renderDeliveryOrders();
+                if (currentViewId === 'view-reports') renderReports();
+            }, (err) => { console.error("Orders Listener Error:", err); });
+
+            hideLoader();
+            switchView('view-login');
+        };
+
+        // Render Triggers
+        const renderCurrentView = () => {
+            if (currentViewId === 'view-admin') renderAdminUsers();
+            if (currentViewId === 'view-branch') { renderBranchOrders(); renderCashier(); }
+            if (currentViewId === 'view-delivery') { renderDeliveryStatus(); renderDeliveryOrders(); }
+            if (currentViewId === 'view-reports') renderReports();
+        };
+
+        // ================= LOGIN LOGIC =================
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const code = document.getElementById('login-code').value;
+            const pass = document.getElementById('login-password').value;
+            
+            const user = allUsers.find(u => u.code === code && u.password === pass);
+            if (user) {
+                currentUser = user;
+                setupNav();
+                showToast(`مرحباً بك ${user.name}`);
+            } else {
+                showToast('بيانات الدخول غير صحيحة', 'error');
+            }
+        });
+
+        // ================= ADMIN LOGIC =================
+        // Form dependencies toggles
+        document.getElementById('usr-role').addEventListener('change', (e) => {
+            const val = e.target.value;
+            document.getElementById('div-usr-phone').classList.toggle('hidden', val !== 'delivery');
+            document.getElementById('div-usr-branch').classList.toggle('hidden', !['branch', 'employee'].includes(val));
+        });
+
+        // Add User
+        document.getElementById('form-add-user').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!firebaseUser) return;
+            const code = document.getElementById('usr-code').value;
+            if (allUsers.some(u => u.code === code)) {
+                showToast('هذا الكود مستخدم مسبقاً', 'error');
+                return;
+            }
+            try {
+                await addDoc(getCol('users'), {
+                    name: document.getElementById('usr-name').value,
+                    code: code,
+                    password: document.getElementById('usr-pass').value,
+                    role: document.getElementById('usr-role').value,
+                    phone: document.getElementById('usr-phone').value || '',
+                    branch: document.getElementById('usr-branch').value || '',
+                    isActive: false // Default for delivery
+                });
+                showToast('تم تسجيل المستخدم بنجاح');
+                e.target.reset();
+                document.getElementById('div-usr-phone').classList.add('hidden');
+                document.getElementById('div-usr-branch').classList.add('hidden');
+            } catch (err) {
+                showToast('حدث خطأ', 'error');
+            }
+        });
+
+        // Add Order
+        document.getElementById('form-add-order').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!firebaseUser) return;
+            try {
+                await addDoc(getCol('orders'), {
+                    orderId: document.getElementById('ord-id').value,
+                    clientName: document.getElementById('ord-client').value,
+                    value: parseFloat(document.getElementById('ord-value').value),
+                    area: document.getElementById('ord-area').value,
+                    branch: document.getElementById('ord-branch').value,
+                    payment: document.getElementById('ord-payment').value,
+                    status: 'pending',
+                    deliveryBoyId: '',
+                    tsCreated: Date.now(),
+                    tsPrepStart: null,
+                    tsOut: null,
+                    tsDelivered: null,
+                    location: null
+                });
+                showToast('تمت إضافة الأوردر بنجاح');
+                e.target.reset();
+            } catch (err) {
+                showToast('حدث خطأ', 'error');
+            }
+        });
+
+        const renderAdminUsers = () => {
+            const tbody = document.getElementById('admin-users-tbody');
+            tbody.innerHTML = allUsers.map(u => `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-2 font-bold text-gray-800">${u.name}</td>
+                    <td class="p-2 text-gray-600">${u.code}</td>
+                    <td class="p-2 text-xs"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">${roleNames[u.role]}</span></td>
+                    <td class="p-2 text-gray-600">${u.branch || '-'}</td>
+                    <td class="p-2">
+                        ${u.role === 'delivery' ? 
+                            (u.isActive ? '<span class="text-green-500 font-bold"><i class="fa-solid fa-circle text-[10px]"></i> حاضر</span>' : '<span class="text-red-500"><i class="fa-regular fa-circle text-[10px]"></i> غائب</span>') 
+                            : '-'}
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        const updateBranchesList = () => {
+            const branches = [...new Set(allUsers.filter(u => u.branch).map(u => u.branch))];
+            // Also collect branches from orders just in case
+            allOrders.forEach(o => { if(o.branch && !branches.includes(o.branch)) branches.push(o.branch); });
+            
+            const dl = document.getElementById('branches-list');
+            dl.innerHTML = branches.map(b => `<option value="${b}">`).join('');
+
+            const filter = document.getElementById('filter-branch-select');
+            const currentFilter = filter.value;
+            filter.innerHTML = `<option value="all">كل الفروع</option>` + branches.map(b => `<option value="${b}">${b}</option>`).join('');
+            if(branches.includes(currentFilter)) filter.value = currentFilter;
+        };
+
+        // ================= BRANCH / EMPLOYEE LOGIC =================
+        // Branch Filter for Manager
+        document.getElementById('filter-branch-select').addEventListener('change', () => {
+            renderBranchOrders();
+            renderCashier();
+        });
+
+        // Tabs Logic
+        document.getElementById('tab-btn-active').addEventListener('click', (e) => {
+            e.target.classList.replace('bg-gray-200', 'bg-blue-600');
+            e.target.classList.replace('text-gray-700', 'text-white');
+            const otherBtn = document.getElementById('tab-btn-cashier');
+            otherBtn.classList.replace('bg-blue-600', 'bg-gray-200');
+            otherBtn.classList.replace('text-white', 'text-gray-700');
+            
+            document.getElementById('tab-active-orders').classList.remove('hidden');
+            document.getElementById('tab-cashier').classList.add('hidden');
+        });
+
+        document.getElementById('tab-btn-cashier').addEventListener('click', (e) => {
+            e.target.classList.replace('bg-gray-200', 'bg-blue-600');
+            e.target.classList.replace('text-gray-700', 'text-white');
+            const otherBtn = document.getElementById('tab-btn-active');
+            otherBtn.classList.replace('bg-blue-600', 'bg-gray-200');
+            otherBtn.classList.replace('text-white', 'text-gray-700');
+
+            document.getElementById('tab-active-orders').classList.add('hidden');
+            document.getElementById('tab-cashier').classList.remove('hidden');
+        });
+
+        const getVisibleOrders = () => {
+            let branchName = currentUser.branch;
+            if (currentUser.role === 'manager') {
+                const filter = document.getElementById('filter-branch-select').value;
+                document.getElementById('manager-branch-filter').classList.remove('hidden');
+                if (filter !== 'all') branchName = filter;
+                else branchName = null; // show all
+            } else {
+                document.getElementById('manager-branch-filter').classList.add('hidden');
+            }
+
+            return allOrders.filter(o => branchName ? o.branch === branchName : true);
+        };
+
+        const renderBranchOrders = () => {
+            const container = document.getElementById('tab-active-orders');
+            const visibleOrders = getVisibleOrders().filter(o => o.status !== 'delivered');
+            
+            const activeDeliveries = allUsers.filter(u => u.role === 'delivery' && u.isActive);
+            let deliveryOptions = `<option value="">-- اختر المندوب --</option>`;
+            activeDeliveries.forEach(d => { deliveryOptions += `<option value="${d._id}">${d.name}</option>`; });
+
+            if(visibleOrders.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center p-10 text-gray-500 font-bold glass-panel rounded-xl">لا توجد أوردرات نشطة حالياً.</div>';
+                return;
+            }
+
+            container.innerHTML = visibleOrders.map(o => `
+                <div class="glass-panel p-4 rounded-xl shadow-md border border-gray-200 flex flex-col h-full">
+                    <div class="flex justify-between items-start mb-2 border-b pb-2">
+                        <div>
+                            <span class="font-bold text-lg text-blue-800">#${o.orderId}</span>
+                            <div class="text-xs text-gray-500"><i class="fa-regular fa-clock"></i> ${formatDate(o.tsCreated)}</div>
+                        </div>
+                        <span class="text-xs px-2 py-1 rounded font-bold ${statusColors[o.status]}">${statusNames[o.status]}</span>
+                    </div>
+                    <div class="flex-grow space-y-1 mb-4 text-sm">
+                        <p><span class="text-gray-500">العميل:</span> <span class="font-bold">${o.clientName}</span></p>
+                        <p><span class="text-gray-500">المنطقة:</span> ${o.area}</p>
+                        <p><span class="text-gray-500">القيمة:</span> <span class="text-green-600 font-bold">${o.value} ج.م</span> (${o.payment})</p>
+                        ${currentUser.role === 'manager' ? `<p><span class="text-gray-500">الفرع:</span> ${o.branch}</p>` : ''}
+                    </div>
+                    
+                    <div class="mt-auto space-y-2">
+                        ${o.status === 'pending' ? `
+                            <button onclick="window.updateOrderStatus('${o._id}', 'preparing')" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded shadow font-bold text-sm transition">
+                                <i class="fa-solid fa-fire-burner"></i> بدء التجهيز
+                            </button>
+                        ` : ''}
+                        
+                        ${o.status === 'preparing' ? `
+                            <div class="flex flex-col gap-2">
+                                <select id="sel-del-${o._id}" class="w-full border rounded p-2 text-sm bg-gray-50">
+                                    ${deliveryOptions}
+                                </select>
+                                <button onclick="window.dispatchOrder('${o._id}')" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded shadow font-bold text-sm transition">
+                                    <i class="fa-solid fa-motorcycle"></i> خرج مع المندوب
+                                </button>
+                            </div>
+                        ` : ''}
+
+                        ${o.status === 'out' ? `
+                            <div class="text-center text-sm font-bold text-purple-700 bg-purple-50 p-2 rounded border border-purple-200">
+                                المندوب: ${allUsers.find(u=>u._id===o.deliveryBoyId)?.name || 'غير معروف'}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        const renderCashier = () => {
+            const tbody = document.getElementById('cashier-tbody');
+            const deliveredOrders = getVisibleOrders().filter(o => o.status === 'delivered').sort((a,b) => b.tsDelivered - a.tsDelivered);
+            
+            if(deliveredOrders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-gray-500">لا يوجد أوردرات تم تسليمها</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = deliveredOrders.map(o => `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-2 font-bold text-gray-800">#${o.orderId}</td>
+                    <td class="p-2 text-gray-600">${o.clientName}</td>
+                    <td class="p-2 text-blue-600 font-bold">${allUsers.find(u=>u._id===o.deliveryBoyId)?.name || '-'}</td>
+                    <td class="p-2 text-green-600 font-bold">${o.value} ج</td>
+                    <td class="p-2"><span class="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded">${o.payment}</span></td>
+                    <td class="p-2 text-xs text-gray-500">${formatDate(o.tsDelivered)}</td>
+                </tr>
+            `).join('');
+        };
+
+        window.updateOrderStatus = async (docId, newStatus, extraData = {}) => {
+            if(!firebaseUser) return;
+            const updates = { status: newStatus, ...extraData };
+            if(newStatus === 'preparing') updates.tsPrepStart = Date.now();
+            if(newStatus === 'delivered') updates.tsDelivered = Date.now();
+            
+            try {
+                await updateDoc(doc(getCol('orders'), docId), updates);
+            } catch(e) {
+                showToast('خطأ في التحديث', 'error');
+            }
+        };
+
+        window.dispatchOrder = async (docId) => {
+            const select = document.getElementById(`sel-del-${docId}`);
+            const delId = select.value;
+            if(!delId) {
+                showToast('يرجى تحديد مندوب التوصيل', 'error');
+                return;
+            }
+            await window.updateOrderStatus(docId, 'out', { deliveryBoyId: delId, tsOut: Date.now() });
+            showToast('تم إخراج الأوردر مع المندوب');
+        };
+
+        // ================= DELIVERY LOGIC =================
+        const renderDeliveryStatus = () => {
+            const toggle = document.getElementById('delivery-attendance-toggle');
+            const txt = document.getElementById('delivery-status-text');
+            
+            toggle.checked = currentUser.isActive;
+            if (currentUser.isActive) {
+                txt.textContent = 'متصل (حاضر)';
+                txt.classList.replace('text-red-500', 'text-green-500');
+            } else {
+                txt.textContent = 'غير متصل (خروج)';
+                txt.classList.replace('text-green-500', 'text-red-500');
+            }
+        };
+
+        document.getElementById('delivery-attendance-toggle').addEventListener('change', async (e) => {
+            if(!firebaseUser) return;
+            try {
+                await updateDoc(doc(getCol('users'), currentUser._id), { isActive: e.target.checked });
+                showToast(e.target.checked ? 'تم تسجيل الحضور' : 'تم تسجيل الانصراف');
+            } catch(err) {
+                e.target.checked = !e.target.checked; // revert
+            }
+        });
+
+        const renderDeliveryOrders = () => {
+            const container = document.getElementById('delivery-orders-container');
+            const myOrders = allOrders.filter(o => o.deliveryBoyId === currentUser._id && o.status === 'out');
+
+            if(!currentUser.isActive) {
+                container.innerHTML = '<div class="col-span-full text-center p-8 bg-red-50 text-red-500 rounded-xl font-bold border border-red-100">يجب تسجيل الحضور لرؤية الأوردرات.</div>';
+                return;
+            }
+
+            if(myOrders.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center p-8 bg-gray-50 text-gray-500 rounded-xl font-bold border border-gray-100">لا يوجد أوردرات مسندة لك حالياً.</div>';
+                return;
+            }
+
+            container.innerHTML = myOrders.map(o => `
+                <div class="glass-panel p-5 rounded-xl shadow-md border-l-4 border-blue-500">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="font-bold text-xl text-gray-800">#${o.orderId}</span>
+                        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold">${o.branch}</span>
+                    </div>
+                    <div class="space-y-2 mb-4 text-sm bg-gray-50 p-3 rounded">
+                        <p><i class="fa-solid fa-user text-gray-400 w-5"></i> <span class="font-bold">${o.clientName}</span></p>
+                        <p><i class="fa-solid fa-location-dot text-gray-400 w-5"></i> ${o.area}</p>
+                        <p><i class="fa-solid fa-money-bill-wave text-green-500 w-5"></i> <span class="font-bold text-lg">${o.value} ج.م</span> (${o.payment})</p>
+                    </div>
+                    <button onclick="window.confirmDelivery('${o._id}')" class="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg shadow-md font-bold text-lg transition flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-check-circle"></i> تم التسليم
+                    </button>
+                </div>
+            `).join('');
+        };
+
+        window.confirmDelivery = (docId) => {
+            const btn = event.currentTarget;
+            btn.innerHTML = '<div class="loader w-5 h-5 border-2 border-white border-top-2 border-t-transparent"></div> جاري تحديد الموقع...';
+            btn.disabled = true;
+
+            const onSuccess = (position) => {
+                const loc = { lat: position.coords.latitude, lng: position.coords.longitude };
+                window.updateOrderStatus(docId, 'delivered', { location: loc });
+                showToast('تم تأكيد التسليم وحفظ الموقع بنجاح!');
+            };
+
+            const onError = (error) => {
+                // Fallback if location fails or is denied so the system doesn't break
+                window.updateOrderStatus(docId, 'delivered', { location: 'تعذر التحديد' });
+                showToast('تم تأكيد التسليم (تعذر تحديد الموقع الدقيق)', 'error');
+            };
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(onSuccess, onError, { timeout: 10000 });
+            } else {
+                onError();
+            }
+        };
+
+        // ================= REPORTS LOGIC =================
+        const renderReports = () => {
+            const tbody = document.getElementById('reports-tbody');
+            // Filter based on role
+            let reportOrders = allOrders;
+            if (currentUser.role === 'branch' || currentUser.role === 'employee') {
+                reportOrders = allOrders.filter(o => o.branch === currentUser.branch);
+            }
+
+            if(reportOrders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4 text-gray-500">لا توجد بيانات للعرض</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = reportOrders.map(o => {
+                const prepTime = o.tsOut && o.tsPrepStart ? formatTimeDiff(o.tsOut - o.tsPrepStart) : '-';
+                const delTime = o.tsDelivered && o.tsOut ? formatTimeDiff(o.tsDelivered - o.tsOut) : '-';
+                
+                return `
+                <tr class="hover:bg-gray-50 transition border-b">
+                    <td class="p-3 font-bold text-gray-800">#${o.orderId}</td>
+                    <td class="p-3 text-gray-600">${o.branch}</td>
+                    <td class="p-3 text-gray-600">${o.clientName}</td>
+                    <td class="p-3 text-blue-600">${allUsers.find(u=>u._id===o.deliveryBoyId)?.name || '-'}</td>
+                    <td class="p-3 font-bold text-green-600">${o.value} ج</td>
+                    <td class="p-3"><span class="text-xs px-2 py-1 rounded ${statusColors[o.status]}">${statusNames[o.status]}</span></td>
+                    <td class="p-3 text-gray-500 text-xs">${prepTime}</td>
+                    <td class="p-3 text-gray-500 text-xs font-bold">${delTime}</td>
+                </tr>
+            `}).join('');
+        };
+
+        // Initialize Application
+        initFirebase();
+
+    </script>
+</body>
+</html>
+

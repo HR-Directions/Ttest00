@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -282,11 +283,23 @@
         // Init Firebase
         const initFirebase = async () => {
             try {
-                const firebaseConfig = {
-            databaseURL: "https://delivery-2-1d699-default-rtdb.firebaseio.com/",
-            projectId: "delivery-2-1d699"
-                    apiKey: "dummy", authDomain: "dummy", projectId: "dummy", storageBucket: "dummy", messagingSenderId: "dummy", appId: "dummy"
-                };
+                let firebaseConfig;
+                
+                // استخدام الإعدادات التلقائية للمنصة إذا كانت متوفرة، وإلا نستخدم إعداداتك بعد إصلاح الخطأ
+                if (typeof __firebase_config !== 'undefined') {
+                    firebaseConfig = JSON.parse(__firebase_config);
+                } else {
+                    // تم إصلاح الخطأ هنا: إضافة الفاصلة (,) وحذف التكرار
+                    firebaseConfig = {
+                        databaseURL: "https://delivery-2-1d699-default-rtdb.firebaseio.com/",
+                        projectId: "delivery-2-1d699",
+                        apiKey: "dummy", 
+                        authDomain: "dummy", 
+                        storageBucket: "dummy", 
+                        messagingSenderId: "dummy", 
+                        appId: "dummy"
+                    };
+                }
                 
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
@@ -303,11 +316,14 @@
                     firebaseUser = user;
                     if (user) {
                         startListeners();
+                    } else {
+                        hideLoader();
                     }
                 });
             } catch (err) {
                 console.error("Firebase Init Error:", err);
-                showToast("خطأ في الاتصال بالخادم.", "error");
+                hideLoader(); // إخفاء شاشة التحميل في حالة وجود خطأ
+                showToast("خطأ في الاتصال بقاعدة البيانات.", "error");
             }
         };
 
@@ -859,4 +875,3 @@
     </script>
 </body>
 </html>
-

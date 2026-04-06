@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -7,296 +6,455 @@
     <title>نظام إدارة التوصيل المتكامل</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Cairo', 'sans-serif'] },
+                    colors: { primary: '#2563eb', secondary: '#f8fafc', accent: '#3b82f6' }
+                }
+            }
+        }
+    </script>
     <style>
-        :root { --primary: #2563eb; --secondary: #f8fafc; --accent: #3b82f6; }
-        body { font-family: 'Cairo', sans-serif; background-color: #f1f5f9; overflow-x: hidden; }
+        body { background-color: #f4f7fb; overflow-x: hidden; }
         
-        /* تحسينات الموبايل */
         @media (max-width: 768px) {
-            .mobile-nav { display: flex; position: fixed; bottom: 0; width: 100%; background: white; border-top: 1px solid #e2e8f0; z-index: 50; }
+            .mobile-nav { display: flex; position: fixed; bottom: 0; width: 100%; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-top: 1px solid #e2e8f0; z-index: 50; padding-bottom: env(safe-area-inset-bottom); }
             .desktop-sidebar { display: none; }
-            main { padding-bottom: 80px; }
+            main { padding-bottom: 90px; }
         }
         
-        /* تحسينات الكمبيوتر */
         @media (min-width: 769px) {
             .mobile-nav { display: none; }
-            .desktop-sidebar { display: flex; flex-direction: column; width: 260px; position: fixed; top: 0; right: 0; height: 100vh; background: #1e293b; color: white; z-index: 40; }
-            main { margin-right: 260px; padding: 2rem; }
+            .desktop-sidebar { display: flex; flex-direction: column; width: 280px; position: fixed; top: 0; right: 0; height: 100vh; background: #ffffff; border-left: 1px solid #e2e8f0; z-index: 40; }
+            main { margin-right: 280px; padding: 2rem; }
         }
 
-        .nav-item.active { color: var(--primary); border-top: 3px solid var(--primary); }
-        .desktop-sidebar .nav-link.active { background: var(--accent); color: white; }
+        .card { background: white; border-radius: 1.25rem; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); border: 1px solid #f1f5f9; transition: all 0.3s ease; }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
         
-        .card { background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); transition: transform 0.2s; }
-        .card:hover { transform: translateY(-2px); }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #2563eb; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        .status-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; }
+        .status-badge { padding: 0.35rem 0.85rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="antialiased">
+<body class="antialiased text-slate-800">
 
-    <!-- شاشة التحميل -->
-    <div id="global-loader" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center">
+    <div id="global-loader" class="fixed inset-0 bg-white/90 backdrop-blur-sm z-[100] flex flex-col items-center justify-center transition-opacity duration-500">
         <div class="loader mb-4"></div>
-        <h2 class="text-xl font-bold text-gray-700">جاري الربط بالسيرفر...</h2>
-        <p class="text-sm text-gray-500 mt-2">يرجى التأكد من اتصال الإنترنت</p>
+        <h2 class="text-xl font-bold text-slate-800">جاري الاتصال بالنظام...</h2>
     </div>
 
-    <!-- إشعارات -->
-    <div id="toast-container" class="fixed top-4 left-4 right-4 md:right-auto md:left-4 z-[110] flex flex-col gap-2"></div>
+    <div id="toast-container" class="fixed top-4 left-4 right-4 md:right-auto md:left-4 z-[110] flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- ================= شاشة تسجيل الدخول ================= -->
-    <div id="view-login" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-500 to-indigo-700 hidden">
-        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
-            <div class="p-8 text-center bg-white">
-                <div class="inline-flex items-center justify-center w-20 h-20 bg-blue-100 text-blue-600 rounded-full mb-4">
-                    <i class="fa-solid fa-truck-fast text-4xl"></i>
+    <div id="view-login" class="min-h-screen flex items-center justify-center p-4 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-slate-900 hidden relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-blue-900/90 to-slate-900/90 z-0"></div>
+        <div class="bg-white w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden z-10 animate-fade-in">
+            <div class="p-10 text-center bg-slate-50 border-b border-slate-100">
+                <div class="inline-flex items-center justify-center w-24 h-24 bg-blue-600 text-white rounded-3xl shadow-lg shadow-blue-200 mb-6 transform -rotate-3 transition hover:rotate-0">
+                    <i class="fa-solid fa-truck-fast text-5xl"></i>
                 </div>
-                <h1 class="text-2xl font-bold text-gray-800">نظام إدارة التوصيل</h1>
-                <p class="text-gray-500 mt-2">تسجيل دخول الموظفين والمناديب</p>
+                <h1 class="text-3xl font-black text-slate-800 tracking-tight">إكسبريس لوجستيك</h1>
+                <p class="text-slate-500 mt-2 font-medium">نظام إدارة التوصيل الموحد</p>
             </div>
-            <form id="login-form" class="p-8 space-y-4">
+            <form id="login-form" class="p-10 space-y-5">
                 <div>
-                    <label class="block text-sm font-semibold mb-1">كود الموظف</label>
-                    <input type="text" id="login-code" class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="أدخل الكود" required>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">كود الموظف</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="login-code" class="w-full pr-11 pl-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition font-medium" placeholder="أدخل كود الدخول" required>
+                    </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold mb-1">كلمة المرور</label>
-                    <input type="password" id="login-password" class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="••••••••" required>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">كلمة المرور</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                        <input type="password" id="login-password" class="w-full pr-11 pl-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition font-medium" placeholder="••••••••" required>
+                    </div>
                 </div>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-2">
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-3 mt-4 text-lg">
                     دخول للنظام <i class="fa-solid fa-arrow-left"></i>
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- ================= الهيكل الرئيسي (بعد الدخول) ================= -->
     <div id="app-container" class="hidden">
         
-        <!-- القائمة الجانبية (للكمبيوتر) -->
-        <aside class="desktop-sidebar shadow-2xl">
-            <div class="p-6 border-b border-slate-700">
-                <div class="flex items-center gap-3">
-                    <i class="fa-solid fa-rocket text-2xl text-blue-400"></i>
-                    <span class="text-xl font-bold tracking-wider">لوحة التحكم</span>
+        <aside class="desktop-sidebar shadow-xl">
+            <div class="p-8 border-b border-slate-100 flex flex-col items-center text-center">
+                <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mb-4">
+                    <i class="fa-solid fa-truck-fast"></i>
                 </div>
-                <div id="user-info-side" class="mt-4">
-                    <p id="side-name" class="font-bold text-blue-300"></p>
-                    <p id="side-role" class="text-xs text-slate-400"></p>
+                <h2 class="text-xl font-black text-slate-800">إكسبريس</h2>
+                <div id="user-info-side" class="mt-4 bg-slate-50 w-full py-3 rounded-xl border border-slate-100">
+                    <p id="side-name" class="font-bold text-slate-700"></p>
+                    <p id="side-role" class="text-xs font-bold text-blue-600 mt-1"></p>
                 </div>
             </div>
-            <nav class="flex-grow p-4 space-y-2 overflow-y-auto" id="desktop-links">
-                <!-- Links here -->
-            </nav>
-            <div class="p-4 border-t border-slate-700">
-                <button onclick="logout()" class="w-full flex items-center gap-3 p-3 text-red-400 hover:bg-red-500/10 rounded-lg transition">
-                    <i class="fa-solid fa-right-from-bracket"></i> خروج من النظام
+            <nav class="flex-grow p-6 space-y-2 overflow-y-auto" id="desktop-links"></nav>
+            <div class="p-6 border-t border-slate-100">
+                <button onclick="logout()" class="w-full flex items-center justify-center gap-3 p-3 text-red-500 font-bold hover:bg-red-50 rounded-xl transition">
+                    <i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج
                 </button>
             </div>
         </aside>
 
-        <!-- التنقل السفلي (للموبايل) -->
-        <nav class="mobile-nav h-16 justify-around items-center px-2">
-            <!-- Mobile Links here -->
-        </nav>
+        <nav class="mobile-nav h-16 justify-around items-center px-1 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]" id="mobile-links"></nav>
 
-        <!-- المحتوى الرئيسي -->
         <main id="main-content">
             
-            <!-- لوحة الإدارة (Manager) -->
-            <section id="view-admin" class="hidden space-y-6 animate-fade-in">
-                <header class="flex justify-between items-center mb-6">
-                    <h1 class="text-2xl font-bold text-slate-800">نظرة عامة على الإدارة</h1>
-                    <div class="bg-white px-4 py-2 rounded-lg shadow-sm border text-sm">
-                        <i class="fa-solid fa-calendar-day text-blue-500 ml-1"></i> <span id="current-date"></span>
+            <section id="view-admin" class="hidden space-y-8 animate-fade-in">
+                <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-black text-slate-800">لوحة القيادة</h1>
+                        <p class="text-slate-500 mt-1">نظرة عامة على نشاط اليوم</p>
+                    </div>
+                    <div class="bg-white px-5 py-2.5 rounded-xl shadow-sm border border-slate-100 text-sm font-bold text-slate-600 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-day text-blue-500"></i> <span id="current-date"></span>
                     </div>
                 </header>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- نموذج إضافة أوردر -->
-                    <div class="lg:col-span-1 card p-6">
-                        <h3 class="font-bold text-lg mb-4 flex items-center gap-2"><i class="fa-solid fa-circle-plus text-green-500"></i> إضافة طلب جديد</h3>
-                        <form id="form-add-order" class="space-y-3">
-                            <input type="text" id="ord-id" placeholder="رقم الطلب (مثلاً: 5020)" class="w-full border p-2 rounded-lg text-sm outline-none focus:border-blue-500" required>
-                            <input type="text" id="ord-client" placeholder="اسم العميل" class="w-full border p-2 rounded-lg text-sm outline-none focus:border-blue-500" required>
-                            <div class="grid grid-cols-2 gap-2">
-                                <input type="number" id="ord-value" placeholder="القيمة" class="w-full border p-2 rounded-lg text-sm outline-none focus:border-blue-500" required>
-                                <input type="text" id="ord-area" placeholder="المنطقة" class="w-full border p-2 rounded-lg text-sm outline-none focus:border-blue-500" required>
-                            </div>
-                            <input type="text" id="ord-branch" placeholder="الفرع" class="w-full border p-2 rounded-lg text-sm outline-none focus:border-blue-500" required list="branches-list">
-                            <select id="ord-payment" class="w-full border p-2 rounded-lg text-sm outline-none focus:border-blue-500">
-                                <option value="كاش">كاش عند الاستلام</option>
-                                <option value="فيزا">فيزا</option>
-                                <option value="انستاباي">انستاباي</option>
-                            </select>
-                            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 shadow transition">حفظ وإرسال للفرع</button>
-                        </form>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                    <div class="card p-6 flex flex-col items-center justify-center text-center relative overflow-hidden group">
+                        <div class="absolute -right-4 -top-4 w-16 h-16 bg-blue-50 rounded-full transition-transform group-hover:scale-150"></div>
+                        <i class="fa-solid fa-cubes text-blue-500 text-2xl mb-3 relative z-10"></i>
+                        <span class="text-4xl font-black text-slate-800 relative z-10" id="stat-total">0</span>
+                        <span class="text-sm font-bold text-slate-500 mt-1 relative z-10">إجمالي الطلبات</span>
                     </div>
+                    <div class="card p-6 flex flex-col items-center justify-center text-center relative overflow-hidden group border-b-4 border-yellow-400">
+                        <i class="fa-solid fa-hourglass-half text-yellow-500 text-2xl mb-3"></i>
+                        <span class="text-4xl font-black text-slate-800" id="stat-pending">0</span>
+                        <span class="text-sm font-bold text-slate-500 mt-1">بانتظار التحضير</span>
+                    </div>
+                    <div class="card p-6 flex flex-col items-center justify-center text-center relative overflow-hidden group border-b-4 border-purple-400">
+                        <i class="fa-solid fa-motorcycle text-purple-500 text-2xl mb-3"></i>
+                        <span class="text-4xl font-black text-slate-800" id="stat-out">0</span>
+                        <span class="text-sm font-bold text-slate-500 mt-1">قيد التوصيل</span>
+                    </div>
+                    <div class="card p-6 flex flex-col items-center justify-center text-center relative overflow-hidden group border-b-4 border-green-400">
+                        <i class="fa-solid fa-check-double text-green-500 text-2xl mb-3"></i>
+                        <span class="text-4xl font-black text-slate-800" id="stat-done">0</span>
+                        <span class="text-sm font-bold text-slate-500 mt-1">تم التسليم اليوم</span>
+                    </div>
+                </div>
 
-                    <!-- إحصائيات سريعة -->
-                    <div class="lg:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        <div class="card p-4 flex flex-col items-center justify-center text-center">
-                            <span class="text-3xl font-bold text-blue-600" id="stat-total">0</span>
-                            <span class="text-xs text-gray-500 mt-1">إجمالي الطلبات</span>
+                <div class="card overflow-hidden">
+                    <div class="bg-slate-800 p-5 text-white flex items-center gap-3">
+                        <i class="fa-solid fa-plus-circle text-blue-400 text-xl"></i>
+                        <h3 class="font-bold text-lg">إنشاء طلب جديد</h3>
+                    </div>
+                    <form id="form-add-order" class="p-6 md:p-8 space-y-5">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">رقم الطلب (ID)</label>
+                                <input type="text" id="ord-id" placeholder="مثال: 5020" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 font-bold" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">اسم العميل</label>
+                                <input type="text" id="ord-client" placeholder="اسم العميل كاملاً" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">المبلغ المطلوب</label>
+                                <div class="relative">
+                                    <input type="number" id="ord-value" placeholder="0.00" class="w-full bg-slate-50 border border-slate-200 p-3 pl-10 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 font-bold" required>
+                                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-xs font-bold">ج.م</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">منطقة التوصيل</label>
+                                <input type="text" id="ord-area" placeholder="العنوان أو المنطقة" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">الفرع التابع له</label>
+                                <select id="ord-branch" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 font-bold branch-selects" required>
+                                    </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">طريقة الدفع</label>
+                                <select id="ord-payment" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 font-bold">
+                                    <option value="كاش">كاش عند الاستلام</option>
+                                    <option value="فيزا">دفع بالفيزا</option>
+                                    <option value="انستاباي">تحويل انستاباي</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="card p-4 flex flex-col items-center justify-center text-center border-b-4 border-yellow-400">
-                            <span class="text-3xl font-bold text-yellow-600" id="stat-pending">0</span>
-                            <span class="text-xs text-gray-500 mt-1">بانتظار التحضير</span>
+                        <div class="pt-2">
+                            <button type="submit" class="w-full md:w-auto px-10 bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-paper-plane"></i> حفظ وإرسال للفرع
+                            </button>
                         </div>
-                        <div class="card p-4 flex flex-col items-center justify-center text-center border-b-4 border-purple-400">
-                            <span class="text-3xl font-bold text-purple-600" id="stat-out">0</span>
-                            <span class="text-xs text-gray-500 mt-1">خرج للتوصيل</span>
-                        </div>
-                        <div class="card p-4 flex flex-col items-center justify-center text-center border-b-4 border-green-400">
-                            <span class="text-3xl font-bold text-green-600" id="stat-done">0</span>
-                            <span class="text-xs text-gray-500 mt-1">تم التسليم اليوم</span>
-                        </div>
+                    </form>
+                </div>
+            </section>
 
-                        <!-- جدول المستخدمين (داخل قسم الإدارة) -->
-                        <div class="col-span-full card overflow-hidden mt-2">
-                            <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
-                                <h3 class="font-bold">فريق العمل (المستخدمين)</h3>
-                                <button onclick="toggleUserForm()" class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold">+ إضافة مستخدم</button>
-                            </div>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-sm text-right">
-                                    <thead class="bg-slate-100 text-slate-600">
-                                        <tr>
-                                            <th class="p-3">الاسم</th>
-                                            <th class="p-3">الكود</th>
-                                            <th class="p-3">الفئة</th>
-                                            <th class="p-3">الفرع</th>
-                                            <th class="p-3">إجراء</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="users-table-body" class="divide-y"></tbody>
-                                </table>
-                            </div>
-                        </div>
+            <section id="view-branches" class="hidden space-y-6 animate-fade-in">
+                <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-black text-slate-800">إدارة الفروع</h1>
+                        <p class="text-slate-500 mt-1">إضافة وتعديل بيانات الفروع</p>
+                    </div>
+                    <button onclick="openBranchModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-bold transition shadow-lg flex items-center gap-2">
+                        <i class="fa-solid fa-code-branch"></i> إضافة فرع جديد
+                    </button>
+                </header>
+
+                <div class="card overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-right">
+                            <thead class="bg-slate-50 text-slate-500 border-b border-slate-200">
+                                <tr>
+                                    <th class="p-4 font-bold">اسم الفرع</th>
+                                    <th class="p-4 font-bold text-center">إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="branches-table-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
                     </div>
                 </div>
             </section>
 
-            <!-- لوحة الطلبات (Branch/Employee) -->
-            <section id="view-orders" class="hidden space-y-4">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-bold">إدارة طلبات <span id="branch-display-name" class="text-blue-600"></span></h2>
-                    <select id="branch-filter-select" class="text-sm border rounded p-1 hidden">
-                        <option value="all">جميع الفروع</option>
-                    </select>
+            <section id="view-team" class="hidden space-y-6 animate-fade-in">
+                <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-black text-slate-800">فريق العمل</h1>
+                        <p class="text-slate-500 mt-1">إدارة حسابات الموظفين والمناديب</p>
+                    </div>
+                    <button onclick="openUserModal()" class="bg-slate-800 hover:bg-slate-700 text-white px-5 py-3 rounded-xl font-bold transition shadow-lg flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus"></i> إضافة موظف جديد
+                    </button>
+                </header>
+
+                <div class="card overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-right">
+                            <thead class="bg-slate-50 text-slate-500 border-b border-slate-200">
+                                <tr>
+                                    <th class="p-4 font-bold">الموظف</th>
+                                    <th class="p-4 font-bold">كود الدخول</th>
+                                    <th class="p-4 font-bold">الدور الوظيفي</th>
+                                    <th class="p-4 font-bold">الفرع</th>
+                                    <th class="p-4 font-bold text-center">الطلبات النشطة</th>
+                                    <th class="p-4 font-bold text-center">إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body" class="divide-y divide-slate-100 bg-white"></tbody>
+                        </table>
+                    </div>
                 </div>
+            </section>
+
+            <section id="view-orders" class="hidden space-y-6 animate-fade-in">
+                <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h2 class="text-2xl font-black text-slate-800">طلبات <span id="branch-display-name" class="text-blue-600 border-b-2 border-blue-200"></span></h2>
+                    </div>
+                    <select id="branch-filter-select" class="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 hidden shadow-sm branch-selects-filter"></select>
+                </header>
                 
-                <!-- التبويبات -->
-                <div class="flex p-1 bg-white rounded-xl shadow-sm border">
-                    <button onclick="setOrderTab('active')" id="tab-active" class="flex-1 py-2 text-sm font-bold rounded-lg transition bg-blue-600 text-white">النشطة</button>
-                    <button onclick="setOrderTab('done')" id="tab-done" class="flex-1 py-2 text-sm font-bold rounded-lg transition text-gray-500 hover:bg-gray-50">تم تسليمها (كاشير)</button>
+                <div class="flex p-1.5 bg-white rounded-xl shadow-sm border border-slate-100 max-w-md">
+                    <button onclick="setOrderTab('active')" id="tab-active" class="flex-1 py-2.5 text-sm font-bold rounded-lg transition bg-blue-600 text-white shadow-sm">الطلبات النشطة</button>
+                    <button onclick="setOrderTab('done')" id="tab-done" class="flex-1 py-2.5 text-sm font-bold rounded-lg transition text-slate-500 hover:bg-slate-50">المنتهية (أرشيف)</button>
                 </div>
 
-                <!-- شبكة الطلبات -->
-                <div id="orders-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                <div id="orders-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
             </section>
 
-            <!-- لوحة المندوب (Delivery) -->
-            <section id="view-delivery" class="hidden space-y-4">
-                <div class="card p-6 border-t-4 border-blue-500 text-center">
-                    <h2 class="text-lg font-bold text-slate-800">حالة الاتصال</h2>
-                    <div class="flex justify-center items-center gap-4 mt-3">
-                        <span id="delivery-status-label" class="font-bold text-red-500">غير متصل</span>
-                        <label class="relative inline-flex items-center cursor-pointer scale-125">
+            <section id="view-delivery" class="hidden space-y-6 animate-fade-in">
+                <div class="card p-8 border-t-4 border-blue-500 text-center max-w-lg mx-auto shadow-xl">
+                    <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fa-solid fa-wifi text-2xl text-blue-500"></i>
+                    </div>
+                    <h2 class="text-xl font-black text-slate-800 mb-2">حالة الاتصال بالعمل</h2>
+                    <p class="text-slate-500 text-sm mb-6">قم بتفعيل الحالة لتلقي الطلبات</p>
+                    
+                    <div class="flex justify-center items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <span id="delivery-status-label" class="font-bold text-red-500 text-lg">غير متصل</span>
+                        <label class="relative inline-flex items-center cursor-pointer scale-150 ml-2">
                             <input type="checkbox" id="delivery-toggle" class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                            <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
                         </label>
                     </div>
                 </div>
-                <h3 class="font-bold border-r-4 border-blue-600 pr-3 my-4">طلبات قيد التوصيل</h3>
-                <div id="delivery-list" class="space-y-4"></div>
+                
+                <div>
+                    <h3 class="text-lg font-black text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-blue-500"></i> الطلبات الحالية قيد التوصيل
+                    </h3>
+                    <div id="delivery-list" class="space-y-4"></div>
+                </div>
             </section>
 
-            <!-- التقارير (Reports) -->
-            <section id="view-reports" class="hidden space-y-4">
-                <h2 class="text-xl font-bold">السجل العام والتقارير</h2>
-                <div class="card overflow-x-auto">
-                    <table class="w-full text-sm text-right">
-                        <thead class="bg-slate-800 text-white">
-                            <tr>
-                                <th class="p-3">الطلب</th>
-                                <th class="p-3">الفرع</th>
-                                <th class="p-3">العميل</th>
-                                <th class="p-3">المندوب</th>
-                                <th class="p-3">الحالة</th>
-                                <th class="p-3 text-center">الموقع</th>
-                            </tr>
-                        </thead>
-                        <tbody id="reports-table-body" class="divide-y bg-white"></tbody>
-                    </table>
+            <section id="view-reports" class="hidden space-y-6 animate-fade-in">
+                <header>
+                    <h2 class="text-2xl font-black text-slate-800">السجل العام والتقارير</h2>
+                </header>
+                <div class="card overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-right">
+                            <thead class="bg-slate-800 text-white">
+                                <tr>
+                                    <th class="p-4 font-bold rounded-tr-xl">رقم الطلب</th>
+                                    <th class="p-4 font-bold">الفرع</th>
+                                    <th class="p-4 font-bold">العميل</th>
+                                    <th class="p-4 font-bold">المندوب</th>
+                                    <th class="p-4 font-bold">الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reports-table-body" class="divide-y divide-slate-100 bg-white"></tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
         </main>
     </div>
 
-    <!-- نافذة إضافة مستخدم (Modal) -->
-    <div id="user-modal" class="fixed inset-0 bg-black/50 z-[120] flex items-center justify-center p-4 hidden">
-        <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl">
-            <h3 class="text-xl font-bold mb-4">إضافة موظف جديد</h3>
-            <form id="form-add-user" class="space-y-4">
-                <input type="text" id="usr-name" placeholder="الاسم الكامل" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" required>
-                <div class="grid grid-cols-2 gap-4">
-                    <input type="text" id="usr-code" placeholder="كود الدخول" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <input type="text" id="usr-pass" placeholder="كلمة المرور" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" required>
+    <div id="user-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-white w-full max-w-md rounded-[2rem] p-8 shadow-2xl transform scale-95 transition-transform duration-300" id="user-modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="user-modal-title" class="text-2xl font-black text-slate-800">إضافة موظف</h3>
+                <button type="button" onclick="closeModal('user-modal')" class="w-8 h-8 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center hover:bg-slate-200 transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-user" class="space-y-4">
+                <input type="hidden" id="usr-id">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">الاسم الكامل</label>
+                    <input type="text" id="usr-name" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" required>
                 </div>
-                <select id="usr-role" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <option value="manager">مدير نظام</option>
-                    <option value="branch">مسؤول فرع</option>
-                    <option value="employee">موظف عادي</option>
-                    <option value="delivery">مندوب توصيل</option>
-                </select>
-                <input type="text" id="usr-branch" placeholder="الفرع التابع له (اختياري)" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" list="branches-list">
-                <div class="flex gap-2 pt-2">
-                    <button type="submit" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl">حفظ البيانات</button>
-                    <button type="button" onclick="toggleUserForm()" class="bg-gray-100 text-gray-500 px-6 rounded-xl font-bold">إلغاء</button>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">كود الدخول</label>
+                        <input type="text" id="usr-code" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-mono text-center font-bold" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">كلمة المرور</label>
+                        <input type="text" id="usr-pass" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">الصلاحية</label>
+                    <select id="usr-role" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold" required>
+                        <option value="manager">مدير نظام</option>
+                        <option value="branch">مسؤول فرع</option>
+                        <option value="employee">موظف فرع</option>
+                        <option value="delivery">مندوب توصيل</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">الفرع التابع له</label>
+                    <select id="usr-branch" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 branch-selects">
+                    </select>
+                </div>
+                <div class="pt-4">
+                    <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-floppy-disk"></i> حفظ البيانات
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <datalist id="branches-list"></datalist>
+    <div id="branch-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl transform scale-95 transition-transform duration-300" id="branch-modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="branch-modal-title" class="text-xl font-black text-slate-800">إضافة فرع</h3>
+                <button type="button" onclick="closeModal('branch-modal')" class="w-8 h-8 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center hover:bg-slate-200 transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-branch" class="space-y-4">
+                <input type="hidden" id="br-id">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">اسم الفرع</label>
+                    <input type="text" id="br-name" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold" required>
+                </div>
+                <div class="pt-4">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg">حفظ الفرع</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="order-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-white w-full max-w-lg rounded-[2rem] p-8 shadow-2xl transform scale-95 transition-transform duration-300" id="order-modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-black text-slate-800">تعديل بيانات الطلب</h3>
+                <button type="button" onclick="closeModal('order-modal')" class="w-8 h-8 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center hover:bg-slate-200 transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-edit-order" class="space-y-4">
+                <input type="hidden" id="edit-ord-dbid">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">اسم العميل</label>
+                        <input type="text" id="edit-ord-client" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">المبلغ (ج.م)</label>
+                        <input type="number" id="edit-ord-val" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-slate-500 mb-1">العنوان / المنطقة</label>
+                        <input type="text" id="edit-ord-area" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">الفرع</label>
+                        <select id="edit-ord-branch" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 branch-selects" required></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">طريقة الدفع</label>
+                        <select id="edit-ord-pay" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="كاش">كاش عند الاستلام</option>
+                            <option value="فيزا">دفع بالفيزا</option>
+                            <option value="انستاباي">تحويل انستاباي</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="pt-4">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg">تحديث الطلب</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-        // ================= التهيئة =================
         const firebaseConfig = {
             databaseURL: "https://delivery-2-1d699-default-rtdb.firebaseio.com/",
             projectId: "delivery-2-1d699",
-            apiKey: "", // فارغ كما في التعليمات، البيئة ستوفره أو يمكنك وضعه إذا لزم
+            apiKey: "",
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // متغيرات الحالة العامة
         let currentUser = null;
         let allUsers = [];
         let allOrders = [];
-        let orderTab = 'active'; // 'active' or 'done'
+        let allBranches = [];
+        let orderTab = 'active';
 
-        // ================= الدالات الأساسية =================
-
+        // ================= Helpers =================
         const showToast = (msg, type = 'success') => {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            const colorClass = type === 'success' ? 'bg-green-600' : 'bg-red-600';
-            toast.className = `${colorClass} text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-bounce-in text-sm font-bold`;
-            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-check-circle' : 'fa-triangle-exclamation'}"></i> ${msg}`;
+            const colorClass = type === 'success' ? 'bg-slate-800' : 'bg-red-600';
+            const icon = type === 'success' ? 'fa-circle-check text-green-400' : 'fa-triangle-exclamation text-white';
+            toast.className = `${colorClass} text-white px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-3 transform transition-all duration-300 translate-y-[-20px] opacity-0 text-sm font-bold border border-slate-700`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-lg"></i> ${msg}`;
             container.appendChild(toast);
-            setTimeout(() => { toast.classList.add('opacity-0', 'translate-y-[-20px]', 'transition-all'); setTimeout(() => toast.remove(), 500); }, 3000);
+            requestAnimationFrame(() => toast.classList.remove('translate-y-[-20px]', 'opacity-0'));
+            setTimeout(() => { toast.classList.add('opacity-0', 'scale-95'); setTimeout(() => toast.remove(), 300); }, 3000);
         };
 
         const hideLoader = () => {
@@ -305,20 +463,28 @@
             setTimeout(() => loader.style.display = 'none', 500);
         };
 
-        // الربط بالبيانات ريل تايم
+        window.openModal = (id) => {
+            const m = document.getElementById(id);
+            const c = document.getElementById(id + '-content');
+            m.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => c.classList.remove('scale-95'), 10);
+        };
+        window.closeModal = (id) => {
+            const m = document.getElementById(id);
+            const c = document.getElementById(id + '-content');
+            c.classList.add('scale-95');
+            setTimeout(() => m.classList.add('opacity-0', 'pointer-events-none'), 200);
+        };
+
+        // ================= Syncing =================
         const startSync = () => {
-            // مزامنة المستخدمين
+            // Users
             onValue(ref(db, 'users'), (snapshot) => {
                 const data = snapshot.val();
                 allUsers = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
-                
-                // إضافة حساب مدير افتراضي إذا كانت القاعدة فارغة
                 if (allUsers.length === 0) {
-                    const defaultUserRef = push(ref(db, 'users'));
-                    set(defaultUserRef, { name: 'المدير العام', code: 'admin', password: 'admin', role: 'manager', isActive: true });
+                    push(ref(db, 'users'), { name: 'المدير العام', code: 'admin', password: 'admin', role: 'manager', isActive: true });
                 }
-
-                // تحديث واجهات العرض إذا كان المستخدم مسجلاً
                 if (currentUser) {
                     const updatedMe = allUsers.find(u => u.id === currentUser.id);
                     if (updatedMe) currentUser = updatedMe;
@@ -326,133 +492,173 @@
                     renderDeliveryStatus();
                 }
                 hideLoader();
-                updateBranchesList();
             });
 
-            // مزامنة الطلبات
+            // Branches
+            onValue(ref(db, 'branches'), (snapshot) => {
+                const data = snapshot.val();
+                allBranches = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+                updateBranchesUI();
+                if (currentUser) renderBranchesTable();
+            });
+
+            // Orders
             onValue(ref(db, 'orders'), (snapshot) => {
                 const data = snapshot.val();
                 allOrders = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
                 allOrders.sort((a,b) => b.ts - a.ts);
-                
                 if (currentUser) {
                     renderStats();
                     renderOrdersGrid();
                     renderDeliveryList();
                     renderReports();
+                    renderUsersTable(); // To update delivery counts
                 }
             });
         };
 
-        // ================= نظام الصفحات والتنقل =================
+        const updateBranchesUI = () => {
+            let options = '<option value="">-- اختر الفرع --</option>';
+            allBranches.forEach(b => options += `<option value="${b.name}">${b.name}</option>`);
+            document.querySelectorAll('.branch-selects').forEach(sel => sel.innerHTML = options);
 
+            let filterOpts = '<option value="all">عرض جميع الفروع</option>';
+            allBranches.forEach(b => filterOpts += `<option value="${b.name}">فرع ${b.name}</option>`);
+            document.querySelectorAll('.branch-selects-filter').forEach(sel => sel.innerHTML = filterOpts);
+        };
+
+        // ================= UI & Navigation =================
         const setupUI = () => {
-            const desktopLinks = document.getElementById('desktop-links');
-            const mobileNav = document.querySelector('.mobile-nav');
+            const dl = document.getElementById('desktop-links');
+            const ml = document.getElementById('mobile-links');
             
             let links = [];
             if (currentUser.role === 'manager') {
                 links = [
-                    { id: 'view-admin', icon: 'fa-gauge-high', text: 'الإدارة' },
-                    { id: 'view-orders', icon: 'fa-boxes-stacked', text: 'الفروع' },
-                    { id: 'view-reports', icon: 'fa-chart-pie', text: 'التقارير' }
+                    { id: 'view-admin', icon: 'fa-chart-pie', text: 'الإدارة' },
+                    { id: 'view-branches', icon: 'fa-code-branch', text: 'الفروع' },
+                    { id: 'view-orders', icon: 'fa-boxes-stacked', text: 'الطلبات' },
+                    { id: 'view-team', icon: 'fa-users-gear', text: 'فريق العمل' },
+                    { id: 'view-reports', icon: 'fa-file-contract', text: 'التقارير' }
                 ];
             } else if (currentUser.role === 'branch' || currentUser.role === 'employee') {
                 links = [
-                    { id: 'view-orders', icon: 'fa-store', text: 'الطلبات' },
+                    { id: 'view-orders', icon: 'fa-store', text: 'طلبات الفرع' },
                     { id: 'view-reports', icon: 'fa-clock-rotate-left', text: 'السجل' }
                 ];
             } else if (currentUser.role === 'delivery') {
                 links = [
-                    { id: 'view-delivery', icon: 'fa-motorcycle', text: 'توصيلاتي' }
+                    { id: 'view-delivery', icon: 'fa-motorcycle', text: 'مهامي' }
                 ];
             }
 
-            const html = links.map(link => `
-                <button onclick="switchView('${link.id}')" data-id="${link.id}" class="nav-btn flex-1 md:flex-none flex flex-col md:flex-row items-center md:gap-3 p-2 md:p-3 rounded-xl transition text-gray-400">
-                    <i class="fa-solid ${link.icon} text-xl md:text-base"></i>
-                    <span class="text-[10px] md:text-sm font-bold mt-1 md:mt-0">${link.text}</span>
-                </button>
-            `).join('');
-
-            desktopLinks.innerHTML = html;
-            mobileNav.innerHTML = html;
+            dl.innerHTML = links.map(l => `<button onclick="switchView('${l.id}')" data-id="${l.id}" class="nav-btn w-full flex items-center gap-3 p-3.5 rounded-xl transition-all text-slate-500 font-bold hover:bg-slate-50 mb-1"><div class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"><i class="fa-solid ${l.icon} text-lg"></i></div><span>${l.text}</span></button>`).join('');
+            ml.innerHTML = links.map(l => `<button onclick="switchView('${l.id}')" data-id="${l.id}" class="nav-btn flex-1 flex flex-col items-center justify-center p-2 rounded-xl transition text-slate-400"><i class="fa-solid ${l.icon} text-xl mb-1 transition-transform"></i><span class="text-[10px] font-bold">${l.text}</span></button>`).join('');
 
             document.getElementById('side-name').innerText = currentUser.name;
             document.getElementById('side-role').innerText = getRoleLabel(currentUser.role);
-            
-            // فتح أول صفحة متاحة
             switchView(links[0].id);
         };
 
         window.switchView = (id) => {
             document.querySelectorAll('main section').forEach(s => s.classList.add('hidden'));
-            document.getElementById(id).classList.remove('hidden');
+            const s = document.getElementById(id);
+            s.classList.remove('hidden', 'animate-fade-in');
+            void s.offsetWidth; s.classList.add('animate-fade-in');
             
-            // تحديث حالة الأزرار
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                if (btn.dataset.id === id) {
-                    btn.classList.add('text-blue-600', 'bg-blue-50/50', 'md:bg-blue-600', 'md:text-white');
-                    btn.classList.remove('text-gray-400');
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                const isD = b.parentElement.id === 'desktop-links';
+                if (b.dataset.id === id) {
+                    if(isD) { b.classList.add('bg-blue-50','text-blue-600'); b.classList.remove('text-slate-500'); b.querySelector('div').classList.add('bg-blue-600','text-white','shadow-md'); }
+                    else { b.classList.add('text-blue-600'); b.classList.remove('text-slate-400'); b.querySelector('i').classList.add('-translate-y-1'); }
                 } else {
-                    btn.classList.remove('text-blue-600', 'bg-blue-50/50', 'md:bg-blue-600', 'md:text-white');
-                    btn.classList.add('text-gray-400');
+                    if(isD) { b.classList.remove('bg-blue-50','text-blue-600'); b.classList.add('text-slate-500'); b.querySelector('div').classList.remove('bg-blue-600','text-white','shadow-md'); }
+                    else { b.classList.remove('text-blue-600'); b.classList.add('text-slate-400'); b.querySelector('i').classList.remove('-translate-y-1'); }
                 }
             });
 
             if (id === 'view-orders') {
-                const filter = document.getElementById('branch-filter-select');
-                if (currentUser.role === 'manager') filter.classList.remove('hidden');
-                document.getElementById('branch-display-name').innerText = currentUser.branch || 'العام';
+                const f = document.getElementById('branch-filter-select');
+                if (currentUser.role === 'manager') f.classList.remove('hidden');
+                document.getElementById('branch-display-name').innerText = currentUser.branch || 'الكل';
             }
         };
 
-        // ================= العمليات (تسجيل الدخول، إضافة، تعديل) =================
-
+        // ================= Auth =================
         document.getElementById('login-form').addEventListener('submit', (e) => {
             e.preventDefault();
-            const code = document.getElementById('login-code').value;
-            const pass = document.getElementById('login-password').value;
-            
-            const user = allUsers.find(u => u.code === code && u.password === pass);
-            if (user) {
-                currentUser = user;
-                document.getElementById('view-login').classList.add('hidden');
-                document.getElementById('app-container').classList.remove('hidden');
-                setupUI();
-                showToast(`مرحباً ${user.name}`);
-            } else {
-                showToast('الكود أو كلمة المرور غير صحيحة', 'error');
-            }
+            const c = document.getElementById('login-code').value, p = document.getElementById('login-password').value;
+            const u = allUsers.find(x => x.code === c && x.password === p);
+            if (u) { currentUser = u; document.getElementById('view-login').classList.add('hidden'); document.getElementById('app-container').classList.remove('hidden'); setupUI(); showToast(`أهلاً بك ${u.name}`); }
+            else showToast('بيانات الدخول خاطئة', 'error');
         });
+        window.logout = () => { currentUser = null; document.getElementById('app-container').classList.add('hidden'); document.getElementById('view-login').classList.remove('hidden'); document.getElementById('login-form').reset(); };
 
-        window.logout = () => {
-            currentUser = null;
-            document.getElementById('app-container').classList.add('hidden');
-            document.getElementById('view-login').classList.remove('hidden');
+        // ================= CRUD Branches =================
+        window.openBranchModal = (id = null) => {
+            document.getElementById('form-branch').reset();
+            document.getElementById('br-id').value = '';
+            document.getElementById('branch-modal-title').innerText = 'إضافة فرع جديد';
+            if(id) {
+                const b = allBranches.find(x => x.id === id);
+                if(b) {
+                    document.getElementById('br-id').value = id;
+                    document.getElementById('br-name').value = b.name;
+                    document.getElementById('branch-modal-title').innerText = 'تعديل الفرع';
+                }
+            }
+            openModal('branch-modal');
         };
 
-        document.getElementById('form-add-order').addEventListener('submit', async (e) => {
+        document.getElementById('form-branch').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const order = {
-                orderId: document.getElementById('ord-id').value,
-                client: document.getElementById('ord-client').value,
-                val: document.getElementById('ord-value').value,
-                area: document.getElementById('ord-area').value,
-                branch: document.getElementById('ord-branch').value,
-                pay: document.getElementById('ord-payment').value,
-                status: 'pending',
-                ts: Date.now(),
-                deliveryId: ''
-            };
-            await push(ref(db, 'orders'), order);
-            showToast('تم إرسال الطلب بنجاح');
-            e.target.reset();
+            const id = document.getElementById('br-id').value;
+            const name = document.getElementById('br-name').value;
+            if(id) { await update(ref(db, `branches/${id}`), { name }); showToast('تم التعديل'); }
+            else { await push(ref(db, 'branches'), { name }); showToast('تمت إضافة الفرع'); }
+            closeModal('branch-modal');
         });
 
-        document.getElementById('form-add-user').addEventListener('submit', async (e) => {
+        window.deleteBranch = async (id) => {
+            if(confirm('هل أنت متأكد من حذف الفرع؟')) { await remove(ref(db, `branches/${id}`)); showToast('تم الحذف'); }
+        };
+
+        const renderBranchesTable = () => {
+            document.getElementById('branches-table-body').innerHTML = allBranches.map(b => `
+                <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                    <td class="p-4 font-black text-slate-700">${b.name}</td>
+                    <td class="p-4 text-center space-x-2 space-x-reverse">
+                        <button onclick="openBranchModal('${b.id}')" class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition inline-flex items-center justify-center"><i class="fa-solid fa-pen text-xs"></i></button>
+                        <button onclick="deleteBranch('${b.id}')" class="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition inline-flex items-center justify-center"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        // ================= CRUD Users =================
+        window.openUserModal = (id = null) => {
+            document.getElementById('form-user').reset();
+            document.getElementById('usr-id').value = '';
+            document.getElementById('user-modal-title').innerText = 'إضافة موظف جديد';
+            if(id) {
+                const u = allUsers.find(x => x.id === id);
+                if(u) {
+                    document.getElementById('usr-id').value = id;
+                    document.getElementById('usr-name').value = u.name;
+                    document.getElementById('usr-code').value = u.code;
+                    document.getElementById('usr-pass').value = u.password;
+                    document.getElementById('usr-role').value = u.role;
+                    document.getElementById('usr-branch').value = u.branch || '';
+                    document.getElementById('user-modal-title').innerText = 'تعديل بيانات الموظف';
+                }
+            }
+            openModal('user-modal');
+        };
+
+        document.getElementById('form-user').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const user = {
+            const id = document.getElementById('usr-id').value;
+            const data = {
                 name: document.getElementById('usr-name').value,
                 code: document.getElementById('usr-code').value,
                 password: document.getElementById('usr-pass').value,
@@ -460,223 +666,164 @@
                 branch: document.getElementById('usr-branch').value,
                 isActive: false
             };
-            await push(ref(db, 'users'), user);
-            showToast('تمت إضافة الموظف');
-            toggleUserForm();
-            e.target.reset();
+            if(id) { await update(ref(db, `users/${id}`), data); showToast('تم التعديل بنجاح'); }
+            else { await push(ref(db, 'users'), data); showToast('تمت الإضافة للفريق'); }
+            closeModal('user-modal');
         });
 
-        // ================= الريندر (العرض) =================
+        window.deleteUser = async (id) => {
+            if (confirm('هل أنت متأكد من حذف الحساب؟')) { await remove(ref(db, `users/${id}`)); showToast('تم الحذف'); }
+        };
 
+        const renderUsersTable = () => {
+            const getActiveOrdersCount = (uid) => allOrders.filter(o => o.deliveryId === uid && o.status === 'out').length;
+            
+            document.getElementById('users-table-body').innerHTML = allUsers.map(u => {
+                const count = u.role === 'delivery' ? getActiveOrdersCount(u.id) : null;
+                const countBadge = count !== null ? `<span class="bg-blue-100 text-blue-700 font-black px-2.5 py-1 rounded-lg text-xs">${count} طلبات</span>` : `<span class="text-slate-300">-</span>`;
+                
+                return `
+                <tr class="hover:bg-slate-50 transition group border-b border-slate-100">
+                    <td class="p-4"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-sm font-black text-blue-600 border border-blue-100">${u.name[0]}</div><span class="font-bold text-slate-700">${u.name}</span></div></td>
+                    <td class="p-4 font-mono text-sm text-slate-500 font-bold">${u.code}</td>
+                    <td class="p-4"><span class="text-xs font-bold text-slate-600 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm">${getRoleLabel(u.role)}</span></td>
+                    <td class="p-4 font-bold text-slate-500">${u.branch || '--'}</td>
+                    <td class="p-4 text-center">${countBadge}</td>
+                    <td class="p-4 text-center space-x-2 space-x-reverse">
+                        <button onclick="openUserModal('${u.id}')" class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition inline-flex items-center justify-center" title="تعديل"><i class="fa-solid fa-pen text-xs"></i></button>
+                        <button onclick="deleteUser('${u.id}')" class="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition inline-flex items-center justify-center" title="حذف"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                    </td>
+                </tr>`
+            }).join('');
+        };
+
+        // ================= CRUD Orders =================
+        document.getElementById('form-add-order').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const order = {
+                orderId: document.getElementById('ord-id').value, client: document.getElementById('ord-client').value,
+                val: document.getElementById('ord-value').value, area: document.getElementById('ord-area').value,
+                branch: document.getElementById('ord-branch').value, pay: document.getElementById('ord-payment').value,
+                status: 'pending', ts: Date.now(), deliveryId: ''
+            };
+            await push(ref(db, 'orders'), order); showToast('تم حفظ الطلب'); e.target.reset();
+        });
+
+        window.openEditOrderModal = (id) => {
+            const o = allOrders.find(x => x.id === id);
+            if(!o) return;
+            document.getElementById('edit-ord-dbid').value = id;
+            document.getElementById('edit-ord-client').value = o.client;
+            document.getElementById('edit-ord-val').value = o.val;
+            document.getElementById('edit-ord-area').value = o.area;
+            document.getElementById('edit-ord-branch').value = o.branch;
+            document.getElementById('edit-ord-pay').value = o.pay;
+            openModal('order-modal');
+        };
+
+        document.getElementById('form-edit-order').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit-ord-dbid').value;
+            await update(ref(db, `orders/${id}`), {
+                client: document.getElementById('edit-ord-client').value,
+                val: document.getElementById('edit-ord-val').value,
+                area: document.getElementById('edit-ord-area').value,
+                branch: document.getElementById('edit-ord-branch').value,
+                pay: document.getElementById('edit-ord-pay').value,
+            });
+            showToast('تم تحديث بيانات الطلب');
+            closeModal('order-modal');
+        });
+
+        // ================= Renders =================
         const renderStats = () => {
             const today = new Date().toDateString();
-            const todayOrders = allOrders.filter(o => new Date(o.ts).toDateString() === today);
-            
-            document.getElementById('stat-total').innerText = todayOrders.length;
-            document.getElementById('stat-pending').innerText = todayOrders.filter(o => o.status === 'pending').length;
-            document.getElementById('stat-out').innerText = todayOrders.filter(o => o.status === 'out').length;
-            document.getElementById('stat-done').innerText = todayOrders.filter(o => o.status === 'delivered').length;
+            const td = allOrders.filter(o => new Date(o.ts).toDateString() === today);
+            document.getElementById('stat-total').innerText = td.length;
+            document.getElementById('stat-pending').innerText = td.filter(o => o.status === 'pending').length;
+            document.getElementById('stat-out').innerText = td.filter(o => o.status === 'out').length;
+            document.getElementById('stat-done').innerText = td.filter(o => o.status === 'delivered').length;
         };
 
         const renderOrdersGrid = () => {
-            const grid = document.getElementById('orders-grid');
-            let filtered = allOrders;
-            
-            // فلترة حسب الفرع
-            if (currentUser.role !== 'manager') {
-                filtered = allOrders.filter(o => o.branch === currentUser.branch);
-            } else {
-                const f = document.getElementById('branch-filter-select').value;
-                if (f !== 'all') filtered = allOrders.filter(o => o.branch === f);
-            }
+            let f = allOrders;
+            if (currentUser.role !== 'manager') f = allOrders.filter(o => o.branch === currentUser.branch);
+            else { const flt = document.getElementById('branch-filter-select').value; if (flt !== 'all') f = allOrders.filter(o => o.branch === flt); }
 
-            // فلترة حسب التبويب (نشط أو منتهي)
-            if (orderTab === 'active') filtered = filtered.filter(o => o.status !== 'delivered');
-            else filtered = filtered.filter(o => o.status === 'delivered');
+            f = orderTab === 'active' ? f.filter(o => o.status !== 'delivered') : f.filter(o => o.status === 'delivered');
 
-            if (filtered.length === 0) {
-                grid.innerHTML = '<div class="col-span-full p-10 text-center text-gray-400">لا يوجد طلبات حالياً</div>';
-                return;
-            }
+            if (f.length === 0) { document.getElementById('orders-grid').innerHTML = '<div class="col-span-full p-16 text-center text-slate-400 font-bold bg-slate-50 border border-dashed border-slate-200 rounded-2xl">القائمة فارغة حالياً</div>'; return; }
 
-            const activeDeliveries = allUsers.filter(u => u.role === 'delivery' && u.isActive);
+            const activeDel = allUsers.filter(u => u.role === 'delivery' && u.isActive);
+            const canEdit = currentUser.role === 'manager' || currentUser.role === 'branch';
 
-            grid.innerHTML = filtered.map(o => `
-                <div class="card p-4 border-r-4 ${o.status === 'pending' ? 'border-yellow-400' : (o.status === 'out' ? 'border-purple-500' : 'border-green-500')}">
-                    <div class="flex justify-between items-start mb-2">
+            document.getElementById('orders-grid').innerHTML = f.map(o => `
+                <div class="card p-5 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-2 h-full ${o.status === 'pending' ? 'bg-yellow-400' : (o.status === 'out' ? 'bg-purple-500' : 'bg-green-500')}"></div>
+                    <div class="flex justify-between items-start mb-4">
                         <div>
-                            <span class="text-xs text-gray-400">#${o.orderId}</span>
-                            <h4 class="font-bold">${o.client}</h4>
+                            <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">#${o.orderId}</span>
+                            <h4 class="font-black text-lg text-slate-800 mt-2">${o.client}</h4>
                         </div>
-                        <span class="status-badge ${getStatusColor(o.status)}">${getStatusLabel(o.status)}</span>
+                        <div class="flex flex-col items-end gap-2">
+                            <span class="status-badge ${getStatusColor(o.status)}"><i class="fa-solid ${getStatusIcon(o.status)} text-[10px]"></i> ${getStatusLabel(o.status)}</span>
+                            ${canEdit ? `<button onclick="openEditOrderModal('${o.id}')" class="text-xs text-blue-500 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-md font-bold transition"><i class="fa-solid fa-pen"></i> تعديل</button>` : ''}
+                        </div>
                     </div>
-                    <div class="text-sm text-gray-600 mb-4 space-y-1">
-                        <p><i class="fa-solid fa-location-dot ml-1 text-gray-400"></i> ${o.area}</p>
-                        <p><i class="fa-solid fa-money-bill ml-1 text-green-500"></i> ${o.val} ج.م (${o.pay})</p>
+                    <div class="space-y-2 mb-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <div class="flex items-center gap-2 text-sm"><i class="fa-solid fa-location-dot text-slate-400 w-4"></i> <span class="font-bold text-slate-700">${o.area}</span></div>
+                        <div class="flex items-center gap-2 text-sm"><i class="fa-solid fa-money-bill-wave text-green-500 w-4"></i> <span class="font-black text-green-600">${o.val} ج.م <span class="text-xs text-slate-400 font-normal">(${o.pay})</span></span></div>
                     </div>
-                    ${o.status === 'pending' ? `
-                        <div class="space-y-2">
-                            <select id="del-select-${o.id}" class="w-full text-xs border p-2 rounded-lg outline-none">
-                                <option value="">-- اختر مندوب متاح --</option>
-                                ${activeDeliveries.map(d => `<option value="${d.id}">${d.name}</option>`).join('')}
-                            </select>
-                            <button onclick="dispatchOrder('${o.id}')" class="w-full bg-blue-600 text-white text-xs font-bold py-2 rounded-lg">إرسال للتوصيل</button>
-                        </div>
-                    ` : (o.status === 'out' ? `
-                        <div class="bg-purple-50 p-2 rounded-lg text-xs text-purple-700 text-center">
-                            مع المندوب: <b>${allUsers.find(u=>u.id === o.deliveryId)?.name || 'غير معروف'}</b>
-                        </div>
-                    ` : '')}
+                    ${o.status === 'pending' ? `<div class="space-y-2 pt-2"><select id="del-${o.id}" class="w-full text-sm bg-slate-50 border p-2 rounded-xl outline-none font-bold"><option value="">-- تفويض למندوب --</option>${activeDel.map(d=>`<option value="${d.id}">${d.name}</option>`).join('')}</select><button onclick="dispatchOrder('${o.id}')" class="w-full bg-slate-800 text-white text-sm font-bold py-2 rounded-xl">إرسال للتوصيل</button></div>` : (o.status === 'out' ? `<div class="bg-purple-50 p-2 rounded-xl text-xs text-purple-700 text-center font-bold">بعهدة: ${allUsers.find(u=>u.id===o.deliveryId)?.name||'--'}</div>` : '')}
                 </div>
             `).join('');
         };
 
-        window.dispatchOrder = async (id) => {
-            const delId = document.getElementById(`del-select-${id}`).value;
-            if (!delId) return showToast('اختر مندوباً أولاً', 'error');
-            await update(ref(db, `orders/${id}`), { status: 'out', deliveryId: delId, tsOut: Date.now() });
-            showToast('خرج الطلب للتوصيل');
-        };
+        window.dispatchOrder = async (id) => { const delId = document.getElementById(`del-${id}`).value; if (!delId) return showToast('اختر مندوباً', 'error'); await update(ref(db, `orders/${id}`), { status: 'out', deliveryId: delId, tsOut: Date.now() }); showToast('تم تسليم العهدة'); };
+        window.setOrderTab = (t) => { orderTab = t; document.getElementById('tab-active').className=t==='active'?'flex-1 py-2.5 text-sm font-bold rounded-lg transition bg-blue-600 text-white':'flex-1 py-2.5 text-sm font-bold rounded-lg transition text-slate-500 hover:bg-slate-50'; document.getElementById('tab-done').className=t==='done'?'flex-1 py-2.5 text-sm font-bold rounded-lg transition bg-blue-600 text-white':'flex-1 py-2.5 text-sm font-bold rounded-lg transition text-slate-500 hover:bg-slate-50'; renderOrdersGrid(); };
+        document.getElementById('branch-filter-select').addEventListener('change', renderOrdersGrid);
 
         const renderDeliveryList = () => {
             const list = document.getElementById('delivery-list');
             const myOrders = allOrders.filter(o => o.deliveryId === currentUser.id && o.status === 'out');
-
-            if (!currentUser.isActive) {
-                list.innerHTML = '<div class="p-6 text-center text-red-500 bg-red-50 rounded-xl">يرجى تسجيل الحضور للبدء</div>';
-                return;
-            }
-
-            if (myOrders.length === 0) {
-                list.innerHTML = '<div class="p-6 text-center text-gray-400">لا يوجد طلبات مسندة لك الآن</div>';
-                return;
-            }
-
+            if (!currentUser.isActive) return list.innerHTML = '<div class="p-8 text-center text-red-500 bg-red-50 rounded-2xl font-bold">يجب تفعيل حالة الاتصال لبدء العمل</div>';
+            if (myOrders.length === 0) return list.innerHTML = '<div class="p-8 text-center text-slate-400 font-bold bg-slate-50 rounded-2xl">لا يوجد طلبات حالياً</div>';
             list.innerHTML = myOrders.map(o => `
-                <div class="card p-5 animate-slide-up">
-                    <div class="flex justify-between mb-3">
-                        <span class="font-bold text-lg">#${o.orderId}</span>
-                        <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-lg text-xs font-bold">${o.branch}</span>
+                <div class="card p-6 border-2 border-blue-100">
+                    <div class="flex justify-between items-center mb-4 pb-4 border-b border-slate-100"><span class="font-black text-xl">#${o.orderId}</span><span class="bg-slate-100 px-3 py-1 rounded-lg text-xs font-bold">${o.branch}</span></div>
+                    <div class="space-y-4 mb-6">
+                        <div class="flex items-center gap-4"><div class="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-500"><i class="fa-solid fa-user"></i></div><div><p class="text-xs font-bold text-slate-400">العميل</p><p class="font-black">${o.client}</p></div></div>
+                        <div class="flex items-center gap-4"><div class="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-500"><i class="fa-solid fa-map-location-dot"></i></div><div><p class="text-xs font-bold text-slate-400">العنوان</p><p class="font-black">${o.area}</p></div></div>
+                        <div class="bg-emerald-50 p-4 rounded-xl flex justify-between items-center"><span class="text-green-800 font-bold text-sm">المطلوب (${o.pay}):</span><span class="text-2xl font-black text-green-700">${o.val} ج.م</span></div>
                     </div>
-                    <div class="space-y-3 mb-5">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500"><i class="fa-solid fa-user"></i></div>
-                            <div><p class="text-xs text-gray-500">العميل</p><p class="font-bold">${o.client}</p></div>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500"><i class="fa-solid fa-map-pin"></i></div>
-                            <div><p class="text-xs text-gray-500">العنوان</p><p class="font-bold">${o.area}</p></div>
-                        </div>
-                        <div class="bg-green-50 p-3 rounded-xl border border-green-100 flex justify-between items-center">
-                            <span class="text-green-700 font-bold">المطلوب تحصيله:</span>
-                            <span class="text-xl font-bold text-green-700">${o.val} ج.م</span>
-                        </div>
-                    </div>
-                    <button onclick="confirmDeliver('${o.id}')" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-200 flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-circle-check"></i> تأكيد تسليم الطلب
-                    </button>
+                    <button onclick="confirmDeliver('${o.id}')" class="w-full bg-green-500 hover:bg-green-600 text-white font-black py-4 rounded-xl shadow-lg flex items-center justify-center gap-2"><i class="fa-solid fa-circle-check text-xl"></i> تأكيد التسليم</button>
                 </div>
             `).join('');
         };
 
-        window.confirmDeliver = async (id) => {
-            // محاولة الحصول على الموقع
-            let loc = "غير متاح";
-            try {
-                const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, {timeout: 5000}));
-                loc = `${pos.coords.latitude},${pos.coords.longitude}`;
-            } catch(e) {}
-            
-            await update(ref(db, `orders/${id}`), { status: 'delivered', tsDelivered: Date.now(), location: loc });
-            showToast('تم التسليم، أحسنت!');
-        };
-
-        const renderUsersTable = () => {
-            const tbody = document.getElementById('users-table-body');
-            tbody.innerHTML = allUsers.map(u => `
-                <tr class="hover:bg-gray-50">
-                    <td class="p-3">
-                        <div class="flex items-center gap-2">
-                            <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600">${u.name[0]}</div>
-                            <span class="font-bold text-slate-700">${u.name}</span>
-                        </div>
-                    </td>
-                    <td class="p-3 font-mono text-xs text-blue-600 font-bold">${u.code}</td>
-                    <td class="p-3"><span class="text-[10px] bg-slate-100 px-2 py-1 rounded">${getRoleLabel(u.role)}</span></td>
-                    <td class="p-3 text-gray-500">${u.branch || '--'}</td>
-                    <td class="p-3">
-                        <button onclick="deleteUser('${u.id}')" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-trash-can"></i></button>
-                    </td>
-                </tr>
-            `).join('');
-        };
+        window.confirmDeliver = async (id) => { await update(ref(db, `orders/${id}`), { status: 'delivered', tsDelivered: Date.now() }); showToast('عمل رائع! تم التسليم.'); };
 
         const renderReports = () => {
-            const tbody = document.getElementById('reports-table-body');
-            tbody.innerHTML = allOrders.map(o => `
-                <tr class="hover:bg-slate-50 transition">
-                    <td class="p-3 font-bold">#${o.orderId}</td>
-                    <td class="p-3 text-xs text-gray-500">${o.branch}</td>
-                    <td class="p-3 text-xs font-bold">${o.client}</td>
-                    <td class="p-3 text-xs">${allUsers.find(u=>u.id===o.deliveryId)?.name || '--'}</td>
-                    <td class="p-3"><span class="status-badge ${getStatusColor(o.status)}">${getStatusLabel(o.status)}</span></td>
-                    <td class="p-3 text-center">
-                        ${o.location && o.location !== 'غير متاح' ? `<a href="https://maps.google.com/?q=${o.location}" target="_blank" class="text-blue-500"><i class="fa-solid fa-location-arrow"></i></a>` : '<i class="fa-solid fa-ban text-gray-300"></i>'}
-                    </td>
+            document.getElementById('reports-table-body').innerHTML = allOrders.map(o => `
+                <tr class="hover:bg-slate-50 border-b border-slate-50 last:border-0">
+                    <td class="p-4 font-black">#${o.orderId}</td><td class="p-4 text-sm font-bold text-slate-500">${o.branch}</td>
+                    <td class="p-4 text-sm font-black">${o.client}</td><td class="p-4 text-sm font-bold text-slate-600">${allUsers.find(u=>u.id===o.deliveryId)?.name || '--'}</td>
+                    <td class="p-4"><span class="status-badge ${getStatusColor(o.status)}">${getStatusLabel(o.status)}</span></td>
                 </tr>
             `).join('');
         };
 
         const renderDeliveryStatus = () => {
-            const toggle = document.getElementById('delivery-toggle');
-            const label = document.getElementById('delivery-status-label');
-            if (toggle && currentUser) {
-                toggle.checked = currentUser.isActive;
-                label.innerText = currentUser.isActive ? 'متصل ومستعد' : 'غير متصل (خروج)';
-                label.className = `font-bold ${currentUser.isActive ? 'text-green-500' : 'text-red-500'}`;
-            }
+            const t = document.getElementById('delivery-toggle'), l = document.getElementById('delivery-status-label');
+            if (t && currentUser) { t.checked = currentUser.isActive; l.innerText = currentUser.isActive ? 'متصل وجاهز' : 'غير متصل'; l.className = `font-black text-lg ${currentUser.isActive ? 'text-green-500' : 'text-slate-400'}`; }
         };
+        document.getElementById('delivery-toggle').addEventListener('change', async (e) => { await update(ref(db, `users/${currentUser.id}`), { isActive: e.target.checked }); showToast(e.target.checked ? 'متصل بالنظام' : 'تسجيل خروج'); });
 
-        document.getElementById('delivery-toggle').addEventListener('change', async (e) => {
-            await update(ref(db, `users/${currentUser.id}`), { isActive: e.target.checked });
-            showToast(e.target.checked ? 'أنت الآن متصل' : 'تم تسجيل الخروج من العمل');
-        });
+        const getRoleLabel = r => ({ 'manager': 'مدير نظام', 'branch': 'مسؤول فرع', 'employee': 'موظف فرع', 'delivery': 'مندوب توصيل' }[r] || r);
+        const getStatusLabel = s => ({ 'pending': 'قيد الانتظار', 'out': 'مع المندوب', 'delivered': 'تم التسليم' }[s] || s);
+        const getStatusColor = s => ({ 'pending': 'bg-amber-100 text-amber-700', 'out': 'bg-purple-100 text-purple-700', 'delivered': 'bg-green-100 text-green-700' }[s]);
+        const getStatusIcon = s => ({ 'pending': 'fa-hourglass-half', 'out': 'fa-motorcycle', 'delivered': 'fa-check-double' }[s]);
 
-        // ================= المساعدات (Helpers) =================
-
-        const getRoleLabel = r => ({ 'manager': 'مدير نظام', 'branch': 'مسؤول فرع', 'employee': 'موظف', 'delivery': 'مندوب' }[r] || r);
-        const getStatusLabel = s => ({ 'pending': 'بانتظار التحضير', 'out': 'خرج للتوصيل', 'delivered': 'تم التسليم' }[s] || s);
-        const getStatusColor = s => ({ 'pending': 'bg-yellow-100 text-yellow-700', 'out': 'bg-purple-100 text-purple-700', 'delivered': 'bg-green-100 text-green-700' }[s]);
-
-        window.toggleUserForm = () => document.getElementById('user-modal').classList.toggle('hidden');
-        window.setOrderTab = (tab) => {
-            orderTab = tab;
-            document.getElementById('tab-active').className = tab === 'active' ? 'flex-1 py-2 text-sm font-bold rounded-lg transition bg-blue-600 text-white shadow' : 'flex-1 py-2 text-sm font-bold rounded-lg transition text-gray-500 hover:bg-gray-50';
-            document.getElementById('tab-done').className = tab === 'done' ? 'flex-1 py-2 text-sm font-bold rounded-lg transition bg-blue-600 text-white shadow' : 'flex-1 py-2 text-sm font-bold rounded-lg transition text-gray-500 hover:bg-gray-50';
-            renderOrdersGrid();
-        };
-
-        const updateBranchesList = () => {
-            const branches = [...new Set(allUsers.filter(u => u.branch).map(u => u.branch))];
-            allOrders.forEach(o => { if(o.branch && !branches.includes(o.branch)) branches.push(o.branch); });
-            document.getElementById('branches-list').innerHTML = branches.map(b => `<option value="${b}">`).join('');
-            
-            const filter = document.getElementById('branch-filter-select');
-            const currentVal = filter.value;
-            filter.innerHTML = `<option value="all">جميع الفروع</option>` + branches.map(b => `<option value="${b}">${b}</option>`).join('');
-            filter.value = currentVal;
-        };
-
-        document.getElementById('branch-filter-select').addEventListener('change', renderOrdersGrid);
-
-        window.deleteUser = async (id) => {
-            if (confirm('هل تريد حذف هذا الموظف نهائياً؟')) {
-                await remove(ref(db, `users/${id}`));
-                showToast('تم الحذف');
-            }
-        };
-
-        // التشغيل
         document.getElementById('current-date').innerText = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         document.getElementById('view-login').classList.remove('hidden');
         startSync();
@@ -684,5 +831,3 @@
     </script>
 </body>
 </html>
-
-

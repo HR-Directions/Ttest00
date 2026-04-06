@@ -1,4 +1,4 @@
-
+```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -17,16 +17,16 @@
 </head>
 <body class="text-gray-800">
 
-    <!-- Toast Notifications -->
+    <!-- إشعارات النظام -->
     <div id="toast-container" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- Full Screen Loader -->
+    <!-- شاشة التحميل الافتتاحية -->
     <div id="global-loader" class="fixed inset-0 bg-white bg-opacity-90 z-[100] flex flex-col items-center justify-center">
         <div class="loader mb-4"></div>
-        <p class="text-lg font-semibold text-blue-600">جاري تهيئة النظام والاتصال بقاعدة البيانات...</p>
+        <p class="text-lg font-semibold text-blue-600">جاري الاتصال بقاعدة البيانات Realtime Database...</p>
     </div>
 
-    <!-- Navbar -->
+    <!-- شريط التصفح -->
     <nav id="navbar" class="bg-blue-700 text-white shadow-lg hidden">
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
             <div class="font-bold text-xl flex items-center gap-2">
@@ -36,23 +36,21 @@
                 <span id="nav-user-name" class="font-semibold text-blue-200"></span>
                 <span id="nav-user-role" class="text-xs bg-blue-800 px-2 py-1 rounded"></span>
                 <div id="nav-links" class="hidden md:flex gap-4 ml-4">
-                    <!-- Dynamic Links -->
+                    <!-- الروابط تتولد ديناميكياً هنا -->
                 </div>
                 <button id="btn-logout" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-sm transition shadow">
                     <i class="fa-solid fa-right-from-bracket"></i> خروج
                 </button>
             </div>
         </div>
-        <!-- Mobile Nav -->
         <div id="mobile-nav-links" class="md:hidden bg-blue-800 flex overflow-x-auto p-2 gap-2 text-sm">
-            <!-- Dynamic Mobile Links -->
+            <!-- الروابط للهاتف -->
         </div>
     </nav>
 
-    <!-- Main Container -->
     <main class="container mx-auto p-4 mb-10">
 
-        <!-- ================= LOGIN VIEW ================= -->
+        <!-- ================= شاشة تسجيل الدخول ================= -->
         <div id="view-login" class="max-w-md mx-auto mt-20 glass-panel rounded-xl shadow-xl overflow-hidden hidden">
             <div class="bg-blue-600 p-6 text-center text-white">
                 <i class="fa-solid fa-user-shield text-4xl mb-2"></i>
@@ -63,23 +61,23 @@
                 <form id="login-form" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium mb-1">كود المستخدم</label>
-                        <input type="text" id="login-code" class="w-full border rounded-lg p-2 focus:ring focus:ring-blue-200 outline-none" required>
+                        <input type="text" id="login-code" class="w-full border rounded-lg p-2 focus:ring focus:ring-blue-200 outline-none text-left" dir="ltr" required>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">كلمة المرور</label>
-                        <input type="password" id="login-password" class="w-full border rounded-lg p-2 focus:ring focus:ring-blue-200 outline-none" required>
+                        <input type="password" id="login-password" class="w-full border rounded-lg p-2 focus:ring focus:ring-blue-200 outline-none text-left" dir="ltr" required>
                     </div>
                     <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition shadow-md">دخول</button>
                 </form>
             </div>
         </div>
 
-        <!-- ================= ADMIN VIEW ================= -->
+        <!-- ================= لوحة الإدارة ================= -->
         <div id="view-admin" class="hidden space-y-6">
             <h2 class="text-2xl font-bold text-gray-800 border-b pb-2"><i class="fa-solid fa-user-tie text-blue-600"></i> لوحة الإدارة</h2>
             
             <div class="grid md:grid-cols-2 gap-6">
-                <!-- Add Order Form -->
+                <!-- إضافة أوردر -->
                 <div class="glass-panel p-5 rounded-xl shadow-md border border-gray-100">
                     <h3 class="text-lg font-bold mb-4 text-blue-800"><i class="fa-solid fa-plus-circle"></i> إضافة أوردر جديد</h3>
                     <form id="form-add-order" class="space-y-3">
@@ -118,7 +116,7 @@
                     </form>
                 </div>
 
-                <!-- Add Employee Form -->
+                <!-- إضافة مستخدم -->
                 <div class="glass-panel p-5 rounded-xl shadow-md border border-gray-100">
                     <h3 class="text-lg font-bold mb-4 text-blue-800"><i class="fa-solid fa-user-plus"></i> إضافة موظف / فرع / مندوب</h3>
                     <form id="form-add-user" class="space-y-3">
@@ -158,17 +156,18 @@
                 </div>
             </div>
             
-            <!-- Users List (Admin Only) -->
+            <!-- قائمة المستخدمين -->
             <div class="glass-panel p-5 rounded-xl shadow-md border border-gray-100 overflow-x-auto">
-                <h3 class="text-lg font-bold mb-4 text-gray-700">المستخدمين المسجلين</h3>
+                <h3 class="text-lg font-bold mb-4 text-gray-700">المستخدمين المسجلين في النظام</h3>
                 <table class="w-full text-sm text-right">
                     <thead class="bg-gray-100 text-gray-600">
                         <tr>
                             <th class="p-2 rounded-tr-lg">الاسم</th>
                             <th class="p-2">الكود</th>
+                            <th class="p-2">كلمة المرور</th>
                             <th class="p-2">الفئة</th>
                             <th class="p-2">الفرع</th>
-                            <th class="p-2 rounded-tl-lg">حالة الحضور (للمناديب)</th>
+                            <th class="p-2 rounded-tl-lg">إجراء</th>
                         </tr>
                     </thead>
                     <tbody id="admin-users-tbody" class="divide-y"></tbody>
@@ -178,7 +177,7 @@
             <datalist id="branches-list"></datalist>
         </div>
 
-        <!-- ================= BRANCH / EMPLOYEE VIEW ================= -->
+        <!-- ================= الفروع والأوردرات ================= -->
         <div id="view-branch" class="hidden space-y-6">
             <div class="flex flex-col md:flex-row justify-between items-center border-b pb-2 gap-4">
                 <h2 class="text-2xl font-bold text-gray-800"><i class="fa-solid fa-store text-blue-600"></i> إدارة الأوردرات</h2>
@@ -190,18 +189,16 @@
                 </div>
             </div>
 
-            <!-- Tab Buttons -->
             <div class="flex gap-2 mb-4">
                 <button id="tab-btn-active" class="flex-1 bg-blue-600 text-white py-2 rounded-lg font-bold shadow transition">الأوردرات الحالية</button>
                 <button id="tab-btn-cashier" class="flex-1 bg-gray-200 text-gray-700 hover:bg-gray-300 py-2 rounded-lg font-bold shadow transition"><i class="fa-solid fa-cash-register"></i> شاشة الكاشير</button>
             </div>
 
-            <!-- Active Orders Tab -->
+            <!-- الأوردرات النشطة -->
             <div id="tab-active-orders" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="branch-orders-container">
-                <!-- Orders will be generated here -->
             </div>
 
-            <!-- Cashier Tab -->
+            <!-- الكاشير -->
             <div id="tab-cashier" class="hidden">
                 <div class="glass-panel p-5 rounded-xl shadow-md border border-gray-100 overflow-x-auto">
                     <h3 class="text-lg font-bold mb-4 text-green-700"><i class="fa-solid fa-check-double"></i> الأوردرات التي تم تسليمها (الكاشير)</h3>
@@ -222,7 +219,7 @@
             </div>
         </div>
 
-        <!-- ================= DELIVERY (FORUM) VIEW ================= -->
+        <!-- ================= المناديب ================= -->
         <div id="view-delivery" class="hidden space-y-6">
             <div class="glass-panel p-6 rounded-xl shadow-md text-center border-t-4 border-blue-500">
                 <h2 class="text-2xl font-bold text-gray-800 mb-2">منصة المناديب</h2>
@@ -238,11 +235,10 @@
 
             <h3 class="text-xl font-bold text-gray-800 mt-6 border-b pb-2">الأوردرات المسندة لك</h3>
             <div id="delivery-orders-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Delivery orders here -->
             </div>
         </div>
 
-        <!-- ================= REPORTS VIEW ================= -->
+        <!-- ================= التقارير ================= -->
         <div id="view-reports" class="hidden space-y-6">
             <h2 class="text-2xl font-bold text-gray-800 border-b pb-2"><i class="fa-solid fa-chart-line text-blue-600"></i> التقارير الشاملة</h2>
             <div class="glass-panel p-5 rounded-xl shadow-md border border-gray-100 overflow-x-auto">
@@ -266,50 +262,36 @@
 
     </main>
 
-    <!-- Scripts (Firebase + Logic) -->
+    <!-- تهيئة فايربيز والسكربتات بـ Realtime Database -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, updateDoc, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // تغيير استيراد Firestore إلى Realtime Database
+        import { getDatabase, ref, onValue, push, set, update, remove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-        // Global State
         let db, auth;
-        let currentUser = null; // Our app's user object from Firestore
-        let firebaseUser = null; // Firebase Auth user
+        let currentUser = null; 
+        let firebaseUser = null; 
         let allUsers = [];
         let allOrders = [];
         let currentViewId = 'view-login';
 
-        // Init Firebase
         const initFirebase = async () => {
             try {
-                let firebaseConfig;
-                
-                if (typeof __firebase_config !== 'undefined') {
-                    firebaseConfig = JSON.parse(__firebase_config);
-                } else {
-                    // بيانات مؤقتة غير صحيحة، يجب تغييرها لتعمل المزامنة بشكل حقيقي
-                    firebaseConfig = {
-                        databaseURL: "https://delivery-2-1d699-default-rtdb.firebaseio.com/",
-                        projectId: "delivery-2-1d699",
-                        apiKey: "dummy", 
-                        authDomain: "dummy", 
-                        storageBucket: "dummy", 
-                        messagingSenderId: "dummy", 
-                        appId: "dummy"
-                    };
-                }
+                // إعدادات الاتصال بـ Realtime Database
+                const firebaseConfig = {
+                    databaseURL: "https://delivery-2-1d699-default-rtdb.firebaseio.com/",
+                    projectId: "delivery-2-1d699",
+                    apiKey: " apiKey: "AIzaSyAnwZILhOW3aA5evrJ5IWrRUAve-EgQjuI", 
+                    authDomain: "delivery-2-1d699.firebaseapp.com"
+                };
                 
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
-                db = getFirestore(app);
+                db = getDatabase(app); 
 
-                // Auth
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
+                // تسجيل دخول مجهول لكي يتمكن من الكتابة والقراءة
+                await signInAnonymously(auth);
                 
                 onAuthStateChanged(auth, (user) => {
                     firebaseUser = user;
@@ -322,15 +304,13 @@
             } catch (err) {
                 console.error("Firebase Init Error:", err);
                 hideLoader(); 
-                showToast("تعذر الاتصال بقاعدة البيانات. يمكنك الدخول للمعاينة بحساب 1234", "error");
-                switchView('view-login'); // التبديل لشاشة الدخول للمعاينة
+                showToast("تعذر الاتصال. تأكد من وضع الـ API Key في الكود.", "error");
+                
+                // تشغيل النظام احتياطياً بدون نت لغرض المعاينة فقط
+                startListeners();
             }
         };
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-delivery-app';
-        const getCol = (name) => collection(db, 'artifacts', appId, 'public', 'data', name);
-
-        // UI Helpers
         const showToast = (msg, type = 'success') => {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -380,12 +360,10 @@
             'delivered': 'bg-green-100 text-green-800'
         };
 
-        // DOM Elements
         const navbar = document.getElementById('navbar');
         const navLinks = document.getElementById('nav-links');
         const mobileNavLinks = document.getElementById('mobile-nav-links');
 
-        // Setup Navigation based on Role
         const setupNav = () => {
             if (!currentUser) {
                 navbar.classList.add('hidden');
@@ -414,7 +392,6 @@
             navLinks.innerHTML = linksHtml;
             mobileNavLinks.innerHTML = linksHtml;
 
-            // Default views
             if (currentUser.role === 'manager') switchView('view-admin');
             else if (currentUser.role === 'branch' || currentUser.role === 'employee') switchView('view-branch');
             else if (currentUser.role === 'delivery') switchView('view-delivery');
@@ -433,7 +410,6 @@
         };
         window.switchViewProxy = switchView;
 
-        // Logout
         document.getElementById('btn-logout').addEventListener('click', () => {
             currentUser = null;
             document.getElementById('login-form').reset();
@@ -442,19 +418,35 @@
             showToast('تم تسجيل الخروج');
         });
 
-        // Listeners
+        // ================= الاستماع لقاعدة البيانات Realtime =================
         const startListeners = () => {
-            if (!firebaseUser) return;
+            if (!db) return;
 
-            onSnapshot(getCol('users'), (snap) => {
+            const usersRef = ref(db, 'users');
+            onValue(usersRef, async (snapshot) => {
                 const users = [];
-                snap.forEach(doc => users.push({ _id: doc.id, ...doc.data() }));
+                snapshot.forEach(child => {
+                    users.push({ _id: child.key, ...child.val() });
+                });
                 allUsers = users;
                 
+                // ===== إنشاء حساب المسؤول الافتراضي إذا كانت القاعدة فارغة =====
                 if (allUsers.length === 0) {
-                    addDoc(getCol('users'), {
-                        name: 'مدير النظام', code: '1234', password: '1234', role: 'manager', branch: '', phone: '', isActive: false
-                    });
+                    try {
+                        const newUserRef = push(usersRef);
+                        await set(newUserRef, {
+                            name: 'مسؤول افتراضي (مؤقت)', 
+                            code: '1234', 
+                            password: '1234', 
+                            role: 'manager', 
+                            branch: '', 
+                            phone: '', 
+                            isActive: true
+                        });
+                        console.log("تم إنشاء المسؤول الافتراضي بنجاح");
+                    } catch(e) {
+                        console.error("خطأ في إنشاء المستخدم الافتراضي، تأكد من صلاحيات قاعدة البيانات", e);
+                    }
                 }
                 
                 if (currentUser) {
@@ -468,9 +460,12 @@
                 if (currentViewId === 'view-branch') renderBranchOrders();
             }, (err) => { console.error("Users Listener Error:", err); });
 
-            onSnapshot(getCol('orders'), (snap) => {
+            const ordersRef = ref(db, 'orders');
+            onValue(ordersRef, (snapshot) => {
                 const orders = [];
-                snap.forEach(doc => orders.push({ _id: doc.id, ...doc.data() }));
+                snapshot.forEach(child => {
+                    orders.push({ _id: child.key, ...child.val() });
+                });
                 allOrders = orders.sort((a,b) => b.tsCreated - a.tsCreated);
                 
                 if (currentViewId === 'view-branch') { renderBranchOrders(); renderCashier(); }
@@ -489,25 +484,13 @@
             if (currentViewId === 'view-reports') renderReports();
         };
 
-        // ================= LOGIN LOGIC =================
+        // ================= تسجيل الدخول =================
         document.getElementById('login-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const code = document.getElementById('login-code').value.trim();
             const pass = document.getElementById('login-password').value.trim();
             
             let user = allUsers.find(u => u.code === code && u.password === pass);
-            
-            // حساب الإدارة الاحتياطي (لضمان عمل النظام حتى لو فشل الاتصال بقاعدة البيانات)
-            if (!user && code === '1234' && pass === '1234') {
-                user = {
-                    _id: 'admin_fallback',
-                    name: 'مدير النظام',
-                    code: '1234',
-                    role: 'manager',
-                    branch: '',
-                    isActive: true
-                };
-            }
 
             if (user) {
                 currentUser = user;
@@ -518,7 +501,7 @@
             }
         });
 
-        // ================= ADMIN LOGIC =================
+        // ================= الإدارة =================
         document.getElementById('usr-role').addEventListener('change', (e) => {
             const val = e.target.value;
             document.getElementById('div-usr-phone').classList.toggle('hidden', val !== 'delivery');
@@ -527,14 +510,15 @@
 
         document.getElementById('form-add-user').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if(!firebaseUser) { showToast('تحتاج لربط قاعدة البيانات لحفظ الموظفين', 'error'); return; }
+            if(!db) return;
             const code = document.getElementById('usr-code').value;
             if (allUsers.some(u => u.code === code)) {
                 showToast('هذا الكود مستخدم مسبقاً', 'error');
                 return;
             }
             try {
-                await addDoc(getCol('users'), {
+                const newUserRef = push(ref(db, 'users'));
+                await set(newUserRef, {
                     name: document.getElementById('usr-name').value,
                     code: code,
                     password: document.getElementById('usr-pass').value,
@@ -548,15 +532,16 @@
                 document.getElementById('div-usr-phone').classList.add('hidden');
                 document.getElementById('div-usr-branch').classList.add('hidden');
             } catch (err) {
-                showToast('حدث خطأ', 'error');
+                showToast('حدث خطأ في التسجيل، تأكد من الصلاحيات', 'error');
             }
         });
 
         document.getElementById('form-add-order').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if(!firebaseUser) { showToast('تحتاج لربط قاعدة البيانات لحفظ الأوردر', 'error'); return; }
+            if(!db) return;
             try {
-                await addDoc(getCol('orders'), {
+                const newOrderRef = push(ref(db, 'orders'));
+                await set(newOrderRef, {
                     orderId: document.getElementById('ord-id').value,
                     clientName: document.getElementById('ord-client').value,
                     value: parseFloat(document.getElementById('ord-value').value),
@@ -574,26 +559,37 @@
                 showToast('تمت إضافة الأوردر بنجاح');
                 e.target.reset();
             } catch (err) {
-                showToast('حدث خطأ', 'error');
+                showToast('حدث خطأ في الإضافة', 'error');
             }
         });
+
+        window.deleteUser = async (docId) => {
+            if(!confirm('هل أنت متأكد من حذف هذا المستخدم؟')) return;
+            try {
+                await remove(ref(db, `users/${docId}`));
+                showToast('تم حذف المستخدم بنجاح');
+            } catch (err) {
+                showToast('حدث خطأ أثناء الحذف', 'error');
+            }
+        };
 
         const renderAdminUsers = () => {
             const tbody = document.getElementById('admin-users-tbody');
             if (allUsers.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-gray-500">لا يوجد مستخدمين لعرضهم أو الاتصال بقاعدة البيانات مفقود</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-gray-500">لا يوجد مستخدمين لعرضهم</td></tr>';
                 return;
             }
             tbody.innerHTML = allUsers.map(u => `
                 <tr class="hover:bg-gray-50">
-                    <td class="p-2 font-bold text-gray-800">${u.name}</td>
-                    <td class="p-2 text-gray-600">${u.code}</td>
+                    <td class="p-2 font-bold text-gray-800">${u.name} ${u.name.includes('مؤقت') ? '<i class="fa-solid fa-triangle-exclamation text-yellow-500" title="حساب مؤقت"></i>' : ''}</td>
+                    <td class="p-2 text-blue-600 font-bold">${u.code}</td>
+                    <td class="p-2 text-gray-600">${u.password}</td>
                     <td class="p-2 text-xs"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">${roleNames[u.role]}</span></td>
                     <td class="p-2 text-gray-600">${u.branch || '-'}</td>
                     <td class="p-2">
-                        ${u.role === 'delivery' ? 
-                            (u.isActive ? '<span class="text-green-500 font-bold"><i class="fa-solid fa-circle text-[10px]"></i> حاضر</span>' : '<span class="text-red-500"><i class="fa-regular fa-circle text-[10px]"></i> غائب</span>') 
-                            : '-'}
+                        <button onclick="window.deleteUser('${u._id}')" class="text-red-500 hover:text-red-700 bg-red-50 px-2 py-1 rounded transition">
+                            <i class="fa-solid fa-trash"></i> حذف
+                        </button>
                     </td>
                 </tr>
             `).join('');
@@ -612,7 +608,7 @@
             if(branches.includes(currentFilter)) filter.value = currentFilter;
         };
 
-        // ================= BRANCH / EMPLOYEE LOGIC =================
+        // ================= الفروع والأوردرات =================
         document.getElementById('filter-branch-select').addEventListener('change', () => {
             renderBranchOrders();
             renderCashier();
@@ -733,13 +729,13 @@
         };
 
         window.updateOrderStatus = async (docId, newStatus, extraData = {}) => {
-            if(!firebaseUser) { showToast('تحتاج لربط قاعدة البيانات لتحديث الأوردر', 'error'); return; }
+            if(!db) return;
             const updates = { status: newStatus, ...extraData };
             if(newStatus === 'preparing') updates.tsPrepStart = Date.now();
             if(newStatus === 'delivered') updates.tsDelivered = Date.now();
             
             try {
-                await updateDoc(doc(getCol('orders'), docId), updates);
+                await update(ref(db, `orders/${docId}`), updates);
             } catch(e) {
                 showToast('خطأ في التحديث', 'error');
             }
@@ -756,7 +752,7 @@
             showToast('تم إخراج الأوردر مع المندوب');
         };
 
-        // ================= DELIVERY LOGIC =================
+        // ================= التوصيل =================
         const renderDeliveryStatus = () => {
             const toggle = document.getElementById('delivery-attendance-toggle');
             const txt = document.getElementById('delivery-status-text');
@@ -772,9 +768,9 @@
         };
 
         document.getElementById('delivery-attendance-toggle').addEventListener('change', async (e) => {
-            if(!firebaseUser) { showToast('تحتاج لربط قاعدة البيانات', 'error'); e.target.checked = !e.target.checked; return; }
+            if(!db) return;
             try {
-                await updateDoc(doc(getCol('users'), currentUser._id), { isActive: e.target.checked });
+                await update(ref(db, `users/${currentUser._id}`), { isActive: e.target.checked });
                 showToast(e.target.checked ? 'تم تسجيل الحضور' : 'تم تسجيل الانصراف');
             } catch(err) {
                 e.target.checked = !e.target.checked; 
@@ -836,7 +832,7 @@
             }
         };
 
-        // ================= REPORTS LOGIC =================
+        // ================= التقارير =================
         const renderReports = () => {
             const tbody = document.getElementById('reports-tbody');
             let reportOrders = allOrders;
@@ -874,3 +870,5 @@
 </body>
 </html>
 
+
+```

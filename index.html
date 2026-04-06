@@ -1,882 +1,688 @@
-```html
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام إدارة التوصيل والفروع</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>نظام إدارة التوصيل المتكامل</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
-        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        :root { --primary: #2563eb; --secondary: #f8fafc; --accent: #3b82f6; }
+        body { font-family: 'Cairo', sans-serif; background-color: #f1f5f9; overflow-x: hidden; }
+        
+        /* تحسينات الموبايل */
+        @media (max-width: 768px) {
+            .mobile-nav { display: flex; position: fixed; bottom: 0; width: 100%; background: white; border-top: 1px solid #e2e8f0; z-index: 50; }
+            .desktop-sidebar { display: none; }
+            main { padding-bottom: 80px; }
+        }
+        
+        /* تحسينات الكمبيوتر */
+        @media (min-width: 769px) {
+            .mobile-nav { display: none; }
+            .desktop-sidebar { display: flex; flex-direction: column; width: 260px; position: fixed; top: 0; right: 0; height: 100vh; background: #1e293b; color: white; z-index: 40; }
+            main { margin-right: 260px; padding: 2rem; }
+        }
+
+        .nav-item.active { color: var(--primary); border-top: 3px solid var(--primary); }
+        .desktop-sidebar .nav-link.active { background: var(--accent); color: white; }
+        
+        .card { background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); transition: transform 0.2s; }
+        .card:hover { transform: translateY(-2px); }
+        
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .toast { transition: opacity 0.3s, transform 0.3s; }
+        
+        .status-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; }
     </style>
 </head>
-<body class="text-gray-800">
+<body class="antialiased">
 
-    <!-- إشعارات النظام -->
-    <div id="toast-container" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
-
-    <!-- شاشة التحميل الافتتاحية -->
-    <div id="global-loader" class="fixed inset-0 bg-white bg-opacity-90 z-[100] flex flex-col items-center justify-center">
+    <!-- شاشة التحميل -->
+    <div id="global-loader" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center">
         <div class="loader mb-4"></div>
-        <p class="text-lg font-semibold text-blue-600">جاري الاتصال بقاعدة البيانات Realtime Database...</p>
+        <h2 class="text-xl font-bold text-gray-700">جاري الربط بالسيرفر...</h2>
+        <p class="text-sm text-gray-500 mt-2">يرجى التأكد من اتصال الإنترنت</p>
     </div>
 
-    <!-- شريط التصفح -->
-    <nav id="navbar" class="bg-blue-700 text-white shadow-lg hidden">
-        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="font-bold text-xl flex items-center gap-2">
-                <i class="fa-solid fa-truck-fast"></i> إدارة التوصيل
-            </div>
-            <div class="flex items-center gap-4">
-                <span id="nav-user-name" class="font-semibold text-blue-200"></span>
-                <span id="nav-user-role" class="text-xs bg-blue-800 px-2 py-1 rounded"></span>
-                <div id="nav-links" class="hidden md:flex gap-4 ml-4">
-                    <!-- الروابط تتولد ديناميكياً هنا -->
+    <!-- إشعارات -->
+    <div id="toast-container" class="fixed top-4 left-4 right-4 md:right-auto md:left-4 z-[110] flex flex-col gap-2"></div>
+
+    <!-- ================= شاشة تسجيل الدخول ================= -->
+    <div id="view-login" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-500 to-indigo-700 hidden">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-8 text-center bg-white">
+                <div class="inline-flex items-center justify-center w-20 h-20 bg-blue-100 text-blue-600 rounded-full mb-4">
+                    <i class="fa-solid fa-truck-fast text-4xl"></i>
                 </div>
-                <button id="btn-logout" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-sm transition shadow">
-                    <i class="fa-solid fa-right-from-bracket"></i> خروج
+                <h1 class="text-2xl font-bold text-gray-800">نظام إدارة التوصيل</h1>
+                <p class="text-gray-500 mt-2">تسجيل دخول الموظفين والمناديب</p>
+            </div>
+            <form id="login-form" class="p-8 space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-1">كود الموظف</label>
+                    <input type="text" id="login-code" class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="أدخل الكود" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">كلمة المرور</label>
+                    <input type="password" id="login-password" class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-2">
+                    دخول للنظام <i class="fa-solid fa-arrow-left"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= الهيكل الرئيسي (بعد الدخول) ================= -->
+    <div id="app-container" class="hidden">
+        
+        <!-- القائمة الجانبية (للكمبيوتر) -->
+        <aside class="desktop-sidebar shadow-2xl">
+            <div class="p-6 border-b border-slate-700">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-rocket text-2xl text-blue-400"></i>
+                    <span class="text-xl font-bold tracking-wider">لوحة التحكم</span>
+                </div>
+                <div id="user-info-side" class="mt-4">
+                    <p id="side-name" class="font-bold text-blue-300"></p>
+                    <p id="side-role" class="text-xs text-slate-400"></p>
+                </div>
+            </div>
+            <nav class="flex-grow p-4 space-y-2 overflow-y-auto" id="desktop-links">
+                <!-- Links here -->
+            </nav>
+            <div class="p-4 border-t border-slate-700">
+                <button onclick="logout()" class="w-full flex items-center gap-3 p-3 text-red-400 hover:bg-red-500/10 rounded-lg transition">
+                    <i class="fa-solid fa-right-from-bracket"></i> خروج من النظام
                 </button>
             </div>
-        </div>
-        <div id="mobile-nav-links" class="md:hidden bg-blue-800 flex overflow-x-auto p-2 gap-2 text-sm">
-            <!-- الروابط للهاتف -->
-        </div>
-    </nav>
+        </aside>
 
-    <main class="container mx-auto p-4 mb-10">
+        <!-- التنقل السفلي (للموبايل) -->
+        <nav class="mobile-nav h-16 justify-around items-center px-2">
+            <!-- Mobile Links here -->
+        </nav>
 
-        <!-- ================= شاشة تسجيل الدخول ================= -->
-        <div id="view-login" class="max-w-md mx-auto mt-20 glass-panel rounded-xl shadow-xl overflow-hidden hidden">
-            <div class="bg-blue-600 p-6 text-center text-white">
-                <i class="fa-solid fa-user-shield text-4xl mb-2"></i>
-                <h1 class="text-2xl font-bold">تسجيل الدخول</h1>
-                <p class="text-blue-200 text-sm mt-1">أدخل الكود وكلمة المرور للمتابعة</p>
-            </div>
-            <div class="p-6">
-                <form id="login-form" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-1">كود المستخدم</label>
-                        <input type="text" id="login-code" class="w-full border rounded-lg p-2 focus:ring focus:ring-blue-200 outline-none text-left" dir="ltr" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">كلمة المرور</label>
-                        <input type="password" id="login-password" class="w-full border rounded-lg p-2 focus:ring focus:ring-blue-200 outline-none text-left" dir="ltr" required>
-                    </div>
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition shadow-md">دخول</button>
-                </form>
-            </div>
-        </div>
-
-        <!-- ================= لوحة الإدارة ================= -->
-        <div id="view-admin" class="hidden space-y-6">
-            <h2 class="text-2xl font-bold text-gray-800 border-b pb-2"><i class="fa-solid fa-user-tie text-blue-600"></i> لوحة الإدارة</h2>
+        <!-- المحتوى الرئيسي -->
+        <main id="main-content">
             
-            <div class="grid md:grid-cols-2 gap-6">
-                <!-- إضافة أوردر -->
-                <div class="glass-panel p-5 rounded-xl shadow-md border border-gray-100">
-                    <h3 class="text-lg font-bold mb-4 text-blue-800"><i class="fa-solid fa-plus-circle"></i> إضافة أوردر جديد</h3>
-                    <form id="form-add-order" class="space-y-3">
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="text-xs text-gray-500">رقم الأوردر</label>
-                                <input type="text" id="ord-id" class="w-full border rounded p-2 text-sm" required>
+            <!-- لوحة الإدارة (Manager) -->
+            <section id="view-admin" class="hidden space-y-6 animate-fade-in">
+                <header class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold text-slate-800">نظرة عامة على الإدارة</h1>
+                    <div class="bg-white px-4 py-2 rounded-lg shadow-sm border text-sm">
+                        <i class="fa-solid fa-calendar-day text-blue-500 ml-1"></i> <span id="current-date"></span>
+                    </div>
+                </header>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- نموذج إضافة أوردر -->
+                    <div class="lg:col-span-1 card p-6">
+                        <h3 class="font-bold text-lg mb-4 flex items-center gap-2"><i class="fa-solid fa-circle-plus text-green-500"></i> إضافة طلب جديد</h3>
+                        <form id="form-add-order" class="space-y-3">
+                            <input type="text" id="ord-id" placeholder="رقم الطلب (مثلاً: 5020)" class="w-full border p-2 rounded-lg text-sm outline-none focus:border-blue-500" required>
+                            <input type="text" id="ord-client" placeholder="اسم العميل" class="w-full border p-2 rounded-lg text-sm outline-none focus:border-blue-500" required>
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="number" id="ord-value" placeholder="القيمة" class="w-full border p-2 rounded-lg text-sm outline-none focus:border-blue-500" required>
+                                <input type="text" id="ord-area" placeholder="المنطقة" class="w-full border p-2 rounded-lg text-sm outline-none focus:border-blue-500" required>
                             </div>
-                            <div>
-                                <label class="text-xs text-gray-500">اسم العميل</label>
-                                <input type="text" id="ord-client" class="w-full border rounded p-2 text-sm" required>
+                            <input type="text" id="ord-branch" placeholder="الفرع" class="w-full border p-2 rounded-lg text-sm outline-none focus:border-blue-500" required list="branches-list">
+                            <select id="ord-payment" class="w-full border p-2 rounded-lg text-sm outline-none focus:border-blue-500">
+                                <option value="كاش">كاش عند الاستلام</option>
+                                <option value="فيزا">فيزا</option>
+                                <option value="انستاباي">انستاباي</option>
+                            </select>
+                            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 shadow transition">حفظ وإرسال للفرع</button>
+                        </form>
+                    </div>
+
+                    <!-- إحصائيات سريعة -->
+                    <div class="lg:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div class="card p-4 flex flex-col items-center justify-center text-center">
+                            <span class="text-3xl font-bold text-blue-600" id="stat-total">0</span>
+                            <span class="text-xs text-gray-500 mt-1">إجمالي الطلبات</span>
+                        </div>
+                        <div class="card p-4 flex flex-col items-center justify-center text-center border-b-4 border-yellow-400">
+                            <span class="text-3xl font-bold text-yellow-600" id="stat-pending">0</span>
+                            <span class="text-xs text-gray-500 mt-1">بانتظار التحضير</span>
+                        </div>
+                        <div class="card p-4 flex flex-col items-center justify-center text-center border-b-4 border-purple-400">
+                            <span class="text-3xl font-bold text-purple-600" id="stat-out">0</span>
+                            <span class="text-xs text-gray-500 mt-1">خرج للتوصيل</span>
+                        </div>
+                        <div class="card p-4 flex flex-col items-center justify-center text-center border-b-4 border-green-400">
+                            <span class="text-3xl font-bold text-green-600" id="stat-done">0</span>
+                            <span class="text-xs text-gray-500 mt-1">تم التسليم اليوم</span>
+                        </div>
+
+                        <!-- جدول المستخدمين (داخل قسم الإدارة) -->
+                        <div class="col-span-full card overflow-hidden mt-2">
+                            <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                                <h3 class="font-bold">فريق العمل (المستخدمين)</h3>
+                                <button onclick="toggleUserForm()" class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold">+ إضافة مستخدم</button>
                             </div>
-                            <div>
-                                <label class="text-xs text-gray-500">القيمة (جنية)</label>
-                                <input type="number" id="ord-value" class="w-full border rounded p-2 text-sm" required>
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500">المنطقة</label>
-                                <input type="text" id="ord-area" class="w-full border rounded p-2 text-sm" required>
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500">الفرع</label>
-                                <input type="text" id="ord-branch" placeholder="مثال: مدينة نصر" class="w-full border rounded p-2 text-sm" required list="branches-list">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500">طريقة الدفع</label>
-                                <select id="ord-payment" class="w-full border rounded p-2 text-sm" required>
-                                    <option value="كاش">كاش</option>
-                                    <option value="فيزا">فيزا</option>
-                                    <option value="انستاباي">انستاباي</option>
-                                    <option value="محفظة">محفظة إلكترونية</option>
-                                </select>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-right">
+                                    <thead class="bg-slate-100 text-slate-600">
+                                        <tr>
+                                            <th class="p-3">الاسم</th>
+                                            <th class="p-3">الكود</th>
+                                            <th class="p-3">الفئة</th>
+                                            <th class="p-3">الفرع</th>
+                                            <th class="p-3">إجراء</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="users-table-body" class="divide-y"></tbody>
+                                </table>
                             </div>
                         </div>
-                        <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white p-2 rounded shadow transition mt-2">إضافة الأوردر</button>
-                    </form>
+                    </div>
                 </div>
+            </section>
 
-                <!-- إضافة مستخدم -->
-                <div class="glass-panel p-5 rounded-xl shadow-md border border-gray-100">
-                    <h3 class="text-lg font-bold mb-4 text-blue-800"><i class="fa-solid fa-user-plus"></i> إضافة موظف / فرع / مندوب</h3>
-                    <form id="form-add-user" class="space-y-3">
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="text-xs text-gray-500">الاسم</label>
-                                <input type="text" id="usr-name" class="w-full border rounded p-2 text-sm" required>
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500">كود الدخول</label>
-                                <input type="text" id="usr-code" class="w-full border rounded p-2 text-sm" required>
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500">كلمة المرور</label>
-                                <input type="text" id="usr-pass" class="w-full border rounded p-2 text-sm" required>
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500">الفئة</label>
-                                <select id="usr-role" class="w-full border rounded p-2 text-sm" required>
-                                    <option value="manager">مسؤول (إدارة)</option>
-                                    <option value="branch">فرع</option>
-                                    <option value="employee">موظف</option>
-                                    <option value="delivery">دليفري</option>
-                                </select>
-                            </div>
-                            <div id="div-usr-phone" class="hidden col-span-2 md:col-span-1">
-                                <label class="text-xs text-gray-500">رقم الهاتف (للمندوب)</label>
-                                <input type="text" id="usr-phone" class="w-full border rounded p-2 text-sm">
-                            </div>
-                            <div id="div-usr-branch" class="hidden col-span-2 md:col-span-1">
-                                <label class="text-xs text-gray-500">اسم الفرع (للموظف/الفرع)</label>
-                                <input type="text" id="usr-branch" class="w-full border rounded p-2 text-sm" list="branches-list">
-                            </div>
-                        </div>
-                        <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white p-2 rounded shadow transition mt-2">تسجيل المستخدم</button>
-                    </form>
-                </div>
-            </div>
-            
-            <!-- قائمة المستخدمين -->
-            <div class="glass-panel p-5 rounded-xl shadow-md border border-gray-100 overflow-x-auto">
-                <h3 class="text-lg font-bold mb-4 text-gray-700">المستخدمين المسجلين في النظام</h3>
-                <table class="w-full text-sm text-right">
-                    <thead class="bg-gray-100 text-gray-600">
-                        <tr>
-                            <th class="p-2 rounded-tr-lg">الاسم</th>
-                            <th class="p-2">الكود</th>
-                            <th class="p-2">كلمة المرور</th>
-                            <th class="p-2">الفئة</th>
-                            <th class="p-2">الفرع</th>
-                            <th class="p-2 rounded-tl-lg">إجراء</th>
-                        </tr>
-                    </thead>
-                    <tbody id="admin-users-tbody" class="divide-y"></tbody>
-                </table>
-            </div>
-            
-            <datalist id="branches-list"></datalist>
-        </div>
-
-        <!-- ================= الفروع والأوردرات ================= -->
-        <div id="view-branch" class="hidden space-y-6">
-            <div class="flex flex-col md:flex-row justify-between items-center border-b pb-2 gap-4">
-                <h2 class="text-2xl font-bold text-gray-800"><i class="fa-solid fa-store text-blue-600"></i> إدارة الأوردرات</h2>
-                <div id="manager-branch-filter" class="hidden flex items-center gap-2">
-                    <label class="text-sm font-bold">تحديد الفرع للعرض:</label>
-                    <select id="filter-branch-select" class="border rounded p-1 text-sm bg-white min-w-[150px]">
-                        <option value="all">كل الفروع</option>
+            <!-- لوحة الطلبات (Branch/Employee) -->
+            <section id="view-orders" class="hidden space-y-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold">إدارة طلبات <span id="branch-display-name" class="text-blue-600"></span></h2>
+                    <select id="branch-filter-select" class="text-sm border rounded p-1 hidden">
+                        <option value="all">جميع الفروع</option>
                     </select>
                 </div>
-            </div>
+                
+                <!-- التبويبات -->
+                <div class="flex p-1 bg-white rounded-xl shadow-sm border">
+                    <button onclick="setOrderTab('active')" id="tab-active" class="flex-1 py-2 text-sm font-bold rounded-lg transition bg-blue-600 text-white">النشطة</button>
+                    <button onclick="setOrderTab('done')" id="tab-done" class="flex-1 py-2 text-sm font-bold rounded-lg transition text-gray-500 hover:bg-gray-50">تم تسليمها (كاشير)</button>
+                </div>
 
-            <div class="flex gap-2 mb-4">
-                <button id="tab-btn-active" class="flex-1 bg-blue-600 text-white py-2 rounded-lg font-bold shadow transition">الأوردرات الحالية</button>
-                <button id="tab-btn-cashier" class="flex-1 bg-gray-200 text-gray-700 hover:bg-gray-300 py-2 rounded-lg font-bold shadow transition"><i class="fa-solid fa-cash-register"></i> شاشة الكاشير</button>
-            </div>
+                <!-- شبكة الطلبات -->
+                <div id="orders-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </section>
 
-            <!-- الأوردرات النشطة -->
-            <div id="tab-active-orders" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="branch-orders-container">
-            </div>
+            <!-- لوحة المندوب (Delivery) -->
+            <section id="view-delivery" class="hidden space-y-4">
+                <div class="card p-6 border-t-4 border-blue-500 text-center">
+                    <h2 class="text-lg font-bold text-slate-800">حالة الاتصال</h2>
+                    <div class="flex justify-center items-center gap-4 mt-3">
+                        <span id="delivery-status-label" class="font-bold text-red-500">غير متصل</span>
+                        <label class="relative inline-flex items-center cursor-pointer scale-125">
+                            <input type="checkbox" id="delivery-toggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                        </label>
+                    </div>
+                </div>
+                <h3 class="font-bold border-r-4 border-blue-600 pr-3 my-4">طلبات قيد التوصيل</h3>
+                <div id="delivery-list" class="space-y-4"></div>
+            </section>
 
-            <!-- الكاشير -->
-            <div id="tab-cashier" class="hidden">
-                <div class="glass-panel p-5 rounded-xl shadow-md border border-gray-100 overflow-x-auto">
-                    <h3 class="text-lg font-bold mb-4 text-green-700"><i class="fa-solid fa-check-double"></i> الأوردرات التي تم تسليمها (الكاشير)</h3>
+            <!-- التقارير (Reports) -->
+            <section id="view-reports" class="hidden space-y-4">
+                <h2 class="text-xl font-bold">السجل العام والتقارير</h2>
+                <div class="card overflow-x-auto">
                     <table class="w-full text-sm text-right">
-                        <thead class="bg-gray-100 text-gray-600">
+                        <thead class="bg-slate-800 text-white">
                             <tr>
-                                <th class="p-2 rounded-tr-lg">الأوردر</th>
-                                <th class="p-2">العميل</th>
-                                <th class="p-2">المندوب</th>
-                                <th class="p-2">القيمة</th>
-                                <th class="p-2">الدفع</th>
-                                <th class="p-2 rounded-tl-lg">وقت التسليم</th>
+                                <th class="p-3">الطلب</th>
+                                <th class="p-3">الفرع</th>
+                                <th class="p-3">العميل</th>
+                                <th class="p-3">المندوب</th>
+                                <th class="p-3">الحالة</th>
+                                <th class="p-3 text-center">الموقع</th>
                             </tr>
                         </thead>
-                        <tbody id="cashier-tbody" class="divide-y"></tbody>
+                        <tbody id="reports-table-body" class="divide-y bg-white"></tbody>
                     </table>
                 </div>
-            </div>
-        </div>
+            </section>
+        </main>
+    </div>
 
-        <!-- ================= المناديب ================= -->
-        <div id="view-delivery" class="hidden space-y-6">
-            <div class="glass-panel p-6 rounded-xl shadow-md text-center border-t-4 border-blue-500">
-                <h2 class="text-2xl font-bold text-gray-800 mb-2">منصة المناديب</h2>
-                <div class="flex justify-center items-center gap-4 mt-4">
-                    <span id="delivery-status-text" class="text-lg font-bold text-red-500">غير متصل (خروج)</span>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="delivery-attendance-toggle" class="sr-only peer">
-                        <div class="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-500"></div>
-                    </label>
+    <!-- نافذة إضافة مستخدم (Modal) -->
+    <div id="user-modal" class="fixed inset-0 bg-black/50 z-[120] flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl">
+            <h3 class="text-xl font-bold mb-4">إضافة موظف جديد</h3>
+            <form id="form-add-user" class="space-y-4">
+                <input type="text" id="usr-name" placeholder="الاسم الكامل" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" required>
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="text" id="usr-code" placeholder="كود الدخول" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <input type="text" id="usr-pass" placeholder="كلمة المرور" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" required>
                 </div>
-                <p class="text-xs text-gray-500 mt-2">يجب تسجيل الحضور لتتمكن الفروع من إسناد الأوردرات لك.</p>
-            </div>
-
-            <h3 class="text-xl font-bold text-gray-800 mt-6 border-b pb-2">الأوردرات المسندة لك</h3>
-            <div id="delivery-orders-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            </div>
+                <select id="usr-role" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <option value="manager">مدير نظام</option>
+                    <option value="branch">مسؤول فرع</option>
+                    <option value="employee">موظف عادي</option>
+                    <option value="delivery">مندوب توصيل</option>
+                </select>
+                <input type="text" id="usr-branch" placeholder="الفرع التابع له (اختياري)" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" list="branches-list">
+                <div class="flex gap-2 pt-2">
+                    <button type="submit" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl">حفظ البيانات</button>
+                    <button type="button" onclick="toggleUserForm()" class="bg-gray-100 text-gray-500 px-6 rounded-xl font-bold">إلغاء</button>
+                </div>
+            </form>
         </div>
+    </div>
 
-        <!-- ================= التقارير ================= -->
-        <div id="view-reports" class="hidden space-y-6">
-            <h2 class="text-2xl font-bold text-gray-800 border-b pb-2"><i class="fa-solid fa-chart-line text-blue-600"></i> التقارير الشاملة</h2>
-            <div class="glass-panel p-5 rounded-xl shadow-md border border-gray-100 overflow-x-auto">
-                <table class="w-full text-sm text-right">
-                    <thead class="bg-gray-800 text-white">
-                        <tr>
-                            <th class="p-3 rounded-tr-lg">الأوردر</th>
-                            <th class="p-3">الفرع</th>
-                            <th class="p-3">العميل</th>
-                            <th class="p-3">المندوب</th>
-                            <th class="p-3">القيمة</th>
-                            <th class="p-3">الحالة</th>
-                            <th class="p-3">زمن التجهيز</th>
-                            <th class="p-3 rounded-tl-lg">زمن التوصيل</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reports-tbody" class="divide-y bg-white"></tbody>
-                </table>
-            </div>
-        </div>
+    <datalist id="branches-list"></datalist>
 
-    </main>
-
-    <!-- تهيئة فايربيز والسكربتات بـ Realtime Database -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // تغيير استيراد Firestore إلى Realtime Database
-        import { getDatabase, ref, onValue, push, set, update, remove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-        let db, auth;
-        let currentUser = null; 
-        let firebaseUser = null; 
+        // ================= التهيئة =================
+        const firebaseConfig = {
+            databaseURL: "https://delivery-2-1d699-default-rtdb.firebaseio.com/",
+            projectId: "delivery-2-1d699",
+            apiKey: "", // فارغ كما في التعليمات، البيئة ستوفره أو يمكنك وضعه إذا لزم
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // متغيرات الحالة العامة
+        let currentUser = null;
         let allUsers = [];
         let allOrders = [];
-        let currentViewId = 'view-login';
+        let orderTab = 'active'; // 'active' or 'done'
 
-        const initFirebase = async () => {
-            try {
-                // إعدادات الاتصال بـ Realtime Database
-                const firebaseConfig = {
-                    databaseURL: "https://delivery-2-1d699-default-rtdb.firebaseio.com/",
-                    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyAnwZILhOW3aA5evrJ5IWrRUAve-EgQjuI",
-  authDomain: "delivery-2-1d699.firebaseapp.com",
-  databaseURL: "https://delivery-2-1d699-default-rtdb.firebaseio.com",
-  projectId: "delivery-2-1d699",
-  storageBucket: "delivery-2-1d699.firebasestorage.app",
-  messagingSenderId: "1043824371245",
-  appId: "1:1043824371245:web:96f4a7ffe3540dd78bfaa4",
-  measurementId: "G-GPL0M905FD"
-};
-            
-                
-                const app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getDatabase(app); 
-
-                // تسجيل دخول مجهول لكي يتمكن من الكتابة والقراءة
-                await signInAnonymously(auth);
-                
-                onAuthStateChanged(auth, (user) => {
-                    firebaseUser = user;
-                    if (user) {
-                        startListeners();
-                    } else {
-                        hideLoader();
-                    }
-                });
-            } catch (err) {
-                console.error("Firebase Init Error:", err);
-                hideLoader(); 
-                showToast("تعذر الاتصال. تأكد من وضع الـ API Key في الكود.", "error");
-                
-                // تشغيل النظام احتياطياً بدون نت لغرض المعاينة فقط
-                startListeners();
-            }
-        };
+        // ================= الدالات الأساسية =================
 
         const showToast = (msg, type = 'success') => {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            const color = type === 'success' ? 'bg-green-500' : 'bg-red-500';
-            toast.className = `toast ${color} text-white px-6 py-3 rounded-lg shadow-lg font-bold flex items-center gap-2`;
+            const colorClass = type === 'success' ? 'bg-green-600' : 'bg-red-600';
+            toast.className = `${colorClass} text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-bounce-in text-sm font-bold`;
             toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-check-circle' : 'fa-triangle-exclamation'}"></i> ${msg}`;
             container.appendChild(toast);
-            setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(-20px)'; }, 3000);
-            setTimeout(() => toast.remove(), 3300);
+            setTimeout(() => { toast.classList.add('opacity-0', 'translate-y-[-20px]', 'transition-all'); setTimeout(() => toast.remove(), 500); }, 3000);
         };
 
-        const hideLoader = () => document.getElementById('global-loader').style.display = 'none';
-
-        const switchView = (viewId) => {
-            document.querySelectorAll('main > div').forEach(el => el.classList.add('hidden'));
-            document.getElementById(viewId).classList.remove('hidden');
-            currentViewId = viewId;
-            renderCurrentView();
-            updateNavActiveState(viewId);
+        const hideLoader = () => {
+            const loader = document.getElementById('global-loader');
+            loader.classList.add('opacity-0');
+            setTimeout(() => loader.style.display = 'none', 500);
         };
 
-        const formatTimeDiff = (ms) => {
-            if (!ms || ms < 0) return '-';
-            const mins = Math.floor(ms / 60000);
-            if (mins < 60) return `${mins} دقيقة`;
-            return `${Math.floor(mins / 60)} س و ${mins % 60} د`;
-        };
+        // الربط بالبيانات ريل تايم
+        const startSync = () => {
+            // مزامنة المستخدمين
+            onValue(ref(db, 'users'), (snapshot) => {
+                const data = snapshot.val();
+                allUsers = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+                
+                // إضافة حساب مدير افتراضي إذا كانت القاعدة فارغة
+                if (allUsers.length === 0) {
+                    const defaultUserRef = push(ref(db, 'users'));
+                    set(defaultUserRef, { name: 'المدير العام', code: 'admin', password: 'admin', role: 'manager', isActive: true });
+                }
 
-        const formatDate = (ts) => {
-            if (!ts) return '-';
-            const d = new Date(ts);
-            return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute:'2-digit' });
-        };
+                // تحديث واجهات العرض إذا كان المستخدم مسجلاً
+                if (currentUser) {
+                    const updatedMe = allUsers.find(u => u.id === currentUser.id);
+                    if (updatedMe) currentUser = updatedMe;
+                    renderUsersTable();
+                    renderDeliveryStatus();
+                }
+                hideLoader();
+                updateBranchesList();
+            });
 
-        const roleNames = {
-            'manager': 'مسؤول', 'branch': 'فرع', 'employee': 'موظف', 'delivery': 'مندوب توصيل'
-        };
-
-        const statusNames = {
-            'pending': 'قيد الانتظار', 'preparing': 'جاري التجهيز', 'out': 'خرج للتوصيل', 'delivered': 'تم التسليم'
-        };
-
-        const statusColors = {
-            'pending': 'bg-yellow-100 text-yellow-800', 
-            'preparing': 'bg-blue-100 text-blue-800', 
-            'out': 'bg-purple-100 text-purple-800', 
-            'delivered': 'bg-green-100 text-green-800'
-        };
-
-        const navbar = document.getElementById('navbar');
-        const navLinks = document.getElementById('nav-links');
-        const mobileNavLinks = document.getElementById('mobile-nav-links');
-
-        const setupNav = () => {
-            if (!currentUser) {
-                navbar.classList.add('hidden');
-                return;
-            }
-            navbar.classList.remove('hidden');
-            document.getElementById('nav-user-name').innerText = currentUser.name;
-            document.getElementById('nav-user-role').innerText = roleNames[currentUser.role];
-            
-            let linksHtml = '';
-            const addLink = (id, icon, text) => {
-                linksHtml += `<a href="#" onclick="window.switchViewProxy('${id}')" class="nav-btn hover:text-blue-300 font-semibold px-2 py-1 rounded" data-target="${id}"><i class="${icon}"></i> ${text}</a>`;
-            };
-
-            if (currentUser.role === 'manager') {
-                addLink('view-admin', 'fa-solid fa-user-tie', 'الإدارة');
-                addLink('view-branch', 'fa-solid fa-store', 'الفروع والكاشير');
-                addLink('view-reports', 'fa-solid fa-chart-line', 'التقارير');
-            } else if (currentUser.role === 'branch' || currentUser.role === 'employee') {
-                addLink('view-branch', 'fa-solid fa-store', 'الأوردرات والكاشير');
-                addLink('view-reports', 'fa-solid fa-chart-line', 'التقارير');
-            } else if (currentUser.role === 'delivery') {
-                addLink('view-delivery', 'fa-solid fa-motorcycle', 'منصة التوصيل');
-            }
-
-            navLinks.innerHTML = linksHtml;
-            mobileNavLinks.innerHTML = linksHtml;
-
-            if (currentUser.role === 'manager') switchView('view-admin');
-            else if (currentUser.role === 'branch' || currentUser.role === 'employee') switchView('view-branch');
-            else if (currentUser.role === 'delivery') switchView('view-delivery');
-        };
-
-        const updateNavActiveState = (viewId) => {
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                if(btn.dataset.target === viewId) {
-                    btn.classList.add('bg-blue-800');
-                    btn.classList.remove('hover:text-blue-300');
-                } else {
-                    btn.classList.remove('bg-blue-800');
-                    btn.classList.add('hover:text-blue-300');
+            // مزامنة الطلبات
+            onValue(ref(db, 'orders'), (snapshot) => {
+                const data = snapshot.val();
+                allOrders = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+                allOrders.sort((a,b) => b.ts - a.ts);
+                
+                if (currentUser) {
+                    renderStats();
+                    renderOrdersGrid();
+                    renderDeliveryList();
+                    renderReports();
                 }
             });
         };
-        window.switchViewProxy = switchView;
 
-        document.getElementById('btn-logout').addEventListener('click', () => {
-            currentUser = null;
-            document.getElementById('login-form').reset();
-            switchView('view-login');
-            navbar.classList.add('hidden');
-            showToast('تم تسجيل الخروج');
-        });
+        // ================= نظام الصفحات والتنقل =================
 
-        // ================= الاستماع لقاعدة البيانات Realtime =================
-        const startListeners = () => {
-            if (!db) return;
+        const setupUI = () => {
+            const desktopLinks = document.getElementById('desktop-links');
+            const mobileNav = document.querySelector('.mobile-nav');
+            
+            let links = [];
+            if (currentUser.role === 'manager') {
+                links = [
+                    { id: 'view-admin', icon: 'fa-gauge-high', text: 'الإدارة' },
+                    { id: 'view-orders', icon: 'fa-boxes-stacked', text: 'الفروع' },
+                    { id: 'view-reports', icon: 'fa-chart-pie', text: 'التقارير' }
+                ];
+            } else if (currentUser.role === 'branch' || currentUser.role === 'employee') {
+                links = [
+                    { id: 'view-orders', icon: 'fa-store', text: 'الطلبات' },
+                    { id: 'view-reports', icon: 'fa-clock-rotate-left', text: 'السجل' }
+                ];
+            } else if (currentUser.role === 'delivery') {
+                links = [
+                    { id: 'view-delivery', icon: 'fa-motorcycle', text: 'توصيلاتي' }
+                ];
+            }
 
-            const usersRef = ref(db, 'users');
-            onValue(usersRef, async (snapshot) => {
-                const users = [];
-                snapshot.forEach(child => {
-                    users.push({ _id: child.key, ...child.val() });
-                });
-                allUsers = users;
-                
-                // ===== إنشاء حساب المسؤول الافتراضي إذا كانت القاعدة فارغة =====
-                if (allUsers.length === 0) {
-                    try {
-                        const newUserRef = push(usersRef);
-                        await set(newUserRef, {
-                            name: 'مسؤول افتراضي (مؤقت)', 
-                            code: '1234', 
-                            password: '1234', 
-                            role: 'manager', 
-                            branch: '', 
-                            phone: '', 
-                            isActive: true
-                        });
-                        console.log("تم إنشاء المسؤول الافتراضي بنجاح");
-                    } catch(e) {
-                        console.error("خطأ في إنشاء المستخدم الافتراضي، تأكد من صلاحيات قاعدة البيانات", e);
-                    }
-                }
-                
-                if (currentUser) {
-                    const updatedMe = allUsers.find(u => u._id === currentUser._id);
-                    if (updatedMe) currentUser = updatedMe;
-                }
+            const html = links.map(link => `
+                <button onclick="switchView('${link.id}')" data-id="${link.id}" class="nav-btn flex-1 md:flex-none flex flex-col md:flex-row items-center md:gap-3 p-2 md:p-3 rounded-xl transition text-gray-400">
+                    <i class="fa-solid ${link.icon} text-xl md:text-base"></i>
+                    <span class="text-[10px] md:text-sm font-bold mt-1 md:mt-0">${link.text}</span>
+                </button>
+            `).join('');
 
-                updateBranchesList();
-                if (currentViewId === 'view-admin') renderAdminUsers();
-                if (currentViewId === 'view-delivery') renderDeliveryStatus();
-                if (currentViewId === 'view-branch') renderBranchOrders();
-            }, (err) => { console.error("Users Listener Error:", err); });
+            desktopLinks.innerHTML = html;
+            mobileNav.innerHTML = html;
 
-            const ordersRef = ref(db, 'orders');
-            onValue(ordersRef, (snapshot) => {
-                const orders = [];
-                snapshot.forEach(child => {
-                    orders.push({ _id: child.key, ...child.val() });
-                });
-                allOrders = orders.sort((a,b) => b.tsCreated - a.tsCreated);
-                
-                if (currentViewId === 'view-branch') { renderBranchOrders(); renderCashier(); }
-                if (currentViewId === 'view-delivery') renderDeliveryOrders();
-                if (currentViewId === 'view-reports') renderReports();
-            }, (err) => { console.error("Orders Listener Error:", err); });
-
-            hideLoader();
-            switchView('view-login');
+            document.getElementById('side-name').innerText = currentUser.name;
+            document.getElementById('side-role').innerText = getRoleLabel(currentUser.role);
+            
+            // فتح أول صفحة متاحة
+            switchView(links[0].id);
         };
 
-        const renderCurrentView = () => {
-            if (currentViewId === 'view-admin') renderAdminUsers();
-            if (currentViewId === 'view-branch') { renderBranchOrders(); renderCashier(); }
-            if (currentViewId === 'view-delivery') { renderDeliveryStatus(); renderDeliveryOrders(); }
-            if (currentViewId === 'view-reports') renderReports();
+        window.switchView = (id) => {
+            document.querySelectorAll('main section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+            
+            // تحديث حالة الأزرار
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if (btn.dataset.id === id) {
+                    btn.classList.add('text-blue-600', 'bg-blue-50/50', 'md:bg-blue-600', 'md:text-white');
+                    btn.classList.remove('text-gray-400');
+                } else {
+                    btn.classList.remove('text-blue-600', 'bg-blue-50/50', 'md:bg-blue-600', 'md:text-white');
+                    btn.classList.add('text-gray-400');
+                }
+            });
+
+            if (id === 'view-orders') {
+                const filter = document.getElementById('branch-filter-select');
+                if (currentUser.role === 'manager') filter.classList.remove('hidden');
+                document.getElementById('branch-display-name').innerText = currentUser.branch || 'العام';
+            }
         };
 
-        // ================= تسجيل الدخول =================
+        // ================= العمليات (تسجيل الدخول، إضافة، تعديل) =================
+
         document.getElementById('login-form').addEventListener('submit', (e) => {
             e.preventDefault();
-            const code = document.getElementById('login-code').value.trim();
-            const pass = document.getElementById('login-password').value.trim();
+            const code = document.getElementById('login-code').value;
+            const pass = document.getElementById('login-password').value;
             
-            let user = allUsers.find(u => u.code === code && u.password === pass);
-
+            const user = allUsers.find(u => u.code === code && u.password === pass);
             if (user) {
                 currentUser = user;
-                setupNav();
-                showToast(`مرحباً بك ${user.name}`);
+                document.getElementById('view-login').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+                setupUI();
+                showToast(`مرحباً ${user.name}`);
             } else {
-                showToast('بيانات الدخول غير صحيحة', 'error');
+                showToast('الكود أو كلمة المرور غير صحيحة', 'error');
             }
         });
 
-        // ================= الإدارة =================
-        document.getElementById('usr-role').addEventListener('change', (e) => {
-            const val = e.target.value;
-            document.getElementById('div-usr-phone').classList.toggle('hidden', val !== 'delivery');
-            document.getElementById('div-usr-branch').classList.toggle('hidden', !['branch', 'employee'].includes(val));
+        window.logout = () => {
+            currentUser = null;
+            document.getElementById('app-container').classList.add('hidden');
+            document.getElementById('view-login').classList.remove('hidden');
+        };
+
+        document.getElementById('form-add-order').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const order = {
+                orderId: document.getElementById('ord-id').value,
+                client: document.getElementById('ord-client').value,
+                val: document.getElementById('ord-value').value,
+                area: document.getElementById('ord-area').value,
+                branch: document.getElementById('ord-branch').value,
+                pay: document.getElementById('ord-payment').value,
+                status: 'pending',
+                ts: Date.now(),
+                deliveryId: ''
+            };
+            await push(ref(db, 'orders'), order);
+            showToast('تم إرسال الطلب بنجاح');
+            e.target.reset();
         });
 
         document.getElementById('form-add-user').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if(!db) return;
-            const code = document.getElementById('usr-code').value;
-            if (allUsers.some(u => u.code === code)) {
-                showToast('هذا الكود مستخدم مسبقاً', 'error');
-                return;
-            }
-            try {
-                const newUserRef = push(ref(db, 'users'));
-                await set(newUserRef, {
-                    name: document.getElementById('usr-name').value,
-                    code: code,
-                    password: document.getElementById('usr-pass').value,
-                    role: document.getElementById('usr-role').value,
-                    phone: document.getElementById('usr-phone').value || '',
-                    branch: document.getElementById('usr-branch').value || '',
-                    isActive: false 
-                });
-                showToast('تم تسجيل المستخدم بنجاح');
-                e.target.reset();
-                document.getElementById('div-usr-phone').classList.add('hidden');
-                document.getElementById('div-usr-branch').classList.add('hidden');
-            } catch (err) {
-                showToast('حدث خطأ في التسجيل، تأكد من الصلاحيات', 'error');
-            }
+            const user = {
+                name: document.getElementById('usr-name').value,
+                code: document.getElementById('usr-code').value,
+                password: document.getElementById('usr-pass').value,
+                role: document.getElementById('usr-role').value,
+                branch: document.getElementById('usr-branch').value,
+                isActive: false
+            };
+            await push(ref(db, 'users'), user);
+            showToast('تمت إضافة الموظف');
+            toggleUserForm();
+            e.target.reset();
         });
 
-        document.getElementById('form-add-order').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if(!db) return;
-            try {
-                const newOrderRef = push(ref(db, 'orders'));
-                await set(newOrderRef, {
-                    orderId: document.getElementById('ord-id').value,
-                    clientName: document.getElementById('ord-client').value,
-                    value: parseFloat(document.getElementById('ord-value').value),
-                    area: document.getElementById('ord-area').value,
-                    branch: document.getElementById('ord-branch').value,
-                    payment: document.getElementById('ord-payment').value,
-                    status: 'pending',
-                    deliveryBoyId: '',
-                    tsCreated: Date.now(),
-                    tsPrepStart: null,
-                    tsOut: null,
-                    tsDelivered: null,
-                    location: null
-                });
-                showToast('تمت إضافة الأوردر بنجاح');
-                e.target.reset();
-            } catch (err) {
-                showToast('حدث خطأ في الإضافة', 'error');
-            }
-        });
+        // ================= الريندر (العرض) =================
 
-        window.deleteUser = async (docId) => {
-            if(!confirm('هل أنت متأكد من حذف هذا المستخدم؟')) return;
-            try {
-                await remove(ref(db, `users/${docId}`));
-                showToast('تم حذف المستخدم بنجاح');
-            } catch (err) {
-                showToast('حدث خطأ أثناء الحذف', 'error');
-            }
-        };
-
-        const renderAdminUsers = () => {
-            const tbody = document.getElementById('admin-users-tbody');
-            if (allUsers.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-gray-500">لا يوجد مستخدمين لعرضهم</td></tr>';
-                return;
-            }
-            tbody.innerHTML = allUsers.map(u => `
-                <tr class="hover:bg-gray-50">
-                    <td class="p-2 font-bold text-gray-800">${u.name} ${u.name.includes('مؤقت') ? '<i class="fa-solid fa-triangle-exclamation text-yellow-500" title="حساب مؤقت"></i>' : ''}</td>
-                    <td class="p-2 text-blue-600 font-bold">${u.code}</td>
-                    <td class="p-2 text-gray-600">${u.password}</td>
-                    <td class="p-2 text-xs"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">${roleNames[u.role]}</span></td>
-                    <td class="p-2 text-gray-600">${u.branch || '-'}</td>
-                    <td class="p-2">
-                        <button onclick="window.deleteUser('${u._id}')" class="text-red-500 hover:text-red-700 bg-red-50 px-2 py-1 rounded transition">
-                            <i class="fa-solid fa-trash"></i> حذف
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-        };
-
-        const updateBranchesList = () => {
-            const branches = [...new Set(allUsers.filter(u => u.branch).map(u => u.branch))];
-            allOrders.forEach(o => { if(o.branch && !branches.includes(o.branch)) branches.push(o.branch); });
+        const renderStats = () => {
+            const today = new Date().toDateString();
+            const todayOrders = allOrders.filter(o => new Date(o.ts).toDateString() === today);
             
-            const dl = document.getElementById('branches-list');
-            dl.innerHTML = branches.map(b => `<option value="${b}">`).join('');
-
-            const filter = document.getElementById('filter-branch-select');
-            const currentFilter = filter.value;
-            filter.innerHTML = `<option value="all">كل الفروع</option>` + branches.map(b => `<option value="${b}">${b}</option>`).join('');
-            if(branches.includes(currentFilter)) filter.value = currentFilter;
+            document.getElementById('stat-total').innerText = todayOrders.length;
+            document.getElementById('stat-pending').innerText = todayOrders.filter(o => o.status === 'pending').length;
+            document.getElementById('stat-out').innerText = todayOrders.filter(o => o.status === 'out').length;
+            document.getElementById('stat-done').innerText = todayOrders.filter(o => o.status === 'delivered').length;
         };
 
-        // ================= الفروع والأوردرات =================
-        document.getElementById('filter-branch-select').addEventListener('change', () => {
-            renderBranchOrders();
-            renderCashier();
-        });
-
-        document.getElementById('tab-btn-active').addEventListener('click', (e) => {
-            e.target.classList.replace('bg-gray-200', 'bg-blue-600');
-            e.target.classList.replace('text-gray-700', 'text-white');
-            const otherBtn = document.getElementById('tab-btn-cashier');
-            otherBtn.classList.replace('bg-blue-600', 'bg-gray-200');
-            otherBtn.classList.replace('text-white', 'text-gray-700');
+        const renderOrdersGrid = () => {
+            const grid = document.getElementById('orders-grid');
+            let filtered = allOrders;
             
-            document.getElementById('tab-active-orders').classList.remove('hidden');
-            document.getElementById('tab-cashier').classList.add('hidden');
-        });
-
-        document.getElementById('tab-btn-cashier').addEventListener('click', (e) => {
-            e.target.classList.replace('bg-gray-200', 'bg-blue-600');
-            e.target.classList.replace('text-gray-700', 'text-white');
-            const otherBtn = document.getElementById('tab-btn-active');
-            otherBtn.classList.replace('bg-blue-600', 'bg-gray-200');
-            otherBtn.classList.replace('text-white', 'text-gray-700');
-
-            document.getElementById('tab-active-orders').classList.add('hidden');
-            document.getElementById('tab-cashier').classList.remove('hidden');
-        });
-
-        const getVisibleOrders = () => {
-            let branchName = currentUser.branch;
-            if (currentUser.role === 'manager') {
-                const filter = document.getElementById('filter-branch-select').value;
-                document.getElementById('manager-branch-filter').classList.remove('hidden');
-                if (filter !== 'all') branchName = filter;
-                else branchName = null; 
+            // فلترة حسب الفرع
+            if (currentUser.role !== 'manager') {
+                filtered = allOrders.filter(o => o.branch === currentUser.branch);
             } else {
-                document.getElementById('manager-branch-filter').classList.add('hidden');
+                const f = document.getElementById('branch-filter-select').value;
+                if (f !== 'all') filtered = allOrders.filter(o => o.branch === f);
             }
 
-            return allOrders.filter(o => branchName ? o.branch === branchName : true);
-        };
+            // فلترة حسب التبويب (نشط أو منتهي)
+            if (orderTab === 'active') filtered = filtered.filter(o => o.status !== 'delivered');
+            else filtered = filtered.filter(o => o.status === 'delivered');
 
-        const renderBranchOrders = () => {
-            const container = document.getElementById('tab-active-orders');
-            const visibleOrders = getVisibleOrders().filter(o => o.status !== 'delivered');
-            
-            const activeDeliveries = allUsers.filter(u => u.role === 'delivery' && u.isActive);
-            let deliveryOptions = `<option value="">-- اختر المندوب --</option>`;
-            activeDeliveries.forEach(d => { deliveryOptions += `<option value="${d._id}">${d.name}</option>`; });
-
-            if(visibleOrders.length === 0) {
-                container.innerHTML = '<div class="col-span-full text-center p-10 text-gray-500 font-bold glass-panel rounded-xl">لا توجد أوردرات نشطة حالياً.</div>';
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="col-span-full p-10 text-center text-gray-400">لا يوجد طلبات حالياً</div>';
                 return;
             }
 
-            container.innerHTML = visibleOrders.map(o => `
-                <div class="glass-panel p-4 rounded-xl shadow-md border border-gray-200 flex flex-col h-full">
-                    <div class="flex justify-between items-start mb-2 border-b pb-2">
-                        <div>
-                            <span class="font-bold text-lg text-blue-800">#${o.orderId}</span>
-                            <div class="text-xs text-gray-500"><i class="fa-regular fa-clock"></i> ${formatDate(o.tsCreated)}</div>
-                        </div>
-                        <span class="text-xs px-2 py-1 rounded font-bold ${statusColors[o.status]}">${statusNames[o.status]}</span>
-                    </div>
-                    <div class="flex-grow space-y-1 mb-4 text-sm">
-                        <p><span class="text-gray-500">العميل:</span> <span class="font-bold">${o.clientName}</span></p>
-                        <p><span class="text-gray-500">المنطقة:</span> ${o.area}</p>
-                        <p><span class="text-gray-500">القيمة:</span> <span class="text-green-600 font-bold">${o.value} ج.م</span> (${o.payment})</p>
-                        ${currentUser.role === 'manager' ? `<p><span class="text-gray-500">الفرع:</span> ${o.branch}</p>` : ''}
-                    </div>
-                    
-                    <div class="mt-auto space-y-2">
-                        ${o.status === 'pending' ? `
-                            <button onclick="window.updateOrderStatus('${o._id}', 'preparing')" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded shadow font-bold text-sm transition">
-                                <i class="fa-solid fa-fire-burner"></i> بدء التجهيز
-                            </button>
-                        ` : ''}
-                        
-                        ${o.status === 'preparing' ? `
-                            <div class="flex flex-col gap-2">
-                                <select id="sel-del-${o._id}" class="w-full border rounded p-2 text-sm bg-gray-50">
-                                    ${deliveryOptions}
-                                </select>
-                                <button onclick="window.dispatchOrder('${o._id}')" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded shadow font-bold text-sm transition">
-                                    <i class="fa-solid fa-motorcycle"></i> خرج مع المندوب
-                                </button>
-                            </div>
-                        ` : ''}
+            const activeDeliveries = allUsers.filter(u => u.role === 'delivery' && u.isActive);
 
-                        ${o.status === 'out' ? `
-                            <div class="text-center text-sm font-bold text-purple-700 bg-purple-50 p-2 rounded border border-purple-200">
-                                المندوب: ${allUsers.find(u=>u._id===o.deliveryBoyId)?.name || 'غير معروف'}
-                            </div>
-                        ` : ''}
+            grid.innerHTML = filtered.map(o => `
+                <div class="card p-4 border-r-4 ${o.status === 'pending' ? 'border-yellow-400' : (o.status === 'out' ? 'border-purple-500' : 'border-green-500')}">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <span class="text-xs text-gray-400">#${o.orderId}</span>
+                            <h4 class="font-bold">${o.client}</h4>
+                        </div>
+                        <span class="status-badge ${getStatusColor(o.status)}">${getStatusLabel(o.status)}</span>
                     </div>
+                    <div class="text-sm text-gray-600 mb-4 space-y-1">
+                        <p><i class="fa-solid fa-location-dot ml-1 text-gray-400"></i> ${o.area}</p>
+                        <p><i class="fa-solid fa-money-bill ml-1 text-green-500"></i> ${o.val} ج.م (${o.pay})</p>
+                    </div>
+                    ${o.status === 'pending' ? `
+                        <div class="space-y-2">
+                            <select id="del-select-${o.id}" class="w-full text-xs border p-2 rounded-lg outline-none">
+                                <option value="">-- اختر مندوب متاح --</option>
+                                ${activeDeliveries.map(d => `<option value="${d.id}">${d.name}</option>`).join('')}
+                            </select>
+                            <button onclick="dispatchOrder('${o.id}')" class="w-full bg-blue-600 text-white text-xs font-bold py-2 rounded-lg">إرسال للتوصيل</button>
+                        </div>
+                    ` : (o.status === 'out' ? `
+                        <div class="bg-purple-50 p-2 rounded-lg text-xs text-purple-700 text-center">
+                            مع المندوب: <b>${allUsers.find(u=>u.id === o.deliveryId)?.name || 'غير معروف'}</b>
+                        </div>
+                    ` : '')}
                 </div>
             `).join('');
         };
 
-        const renderCashier = () => {
-            const tbody = document.getElementById('cashier-tbody');
-            const deliveredOrders = getVisibleOrders().filter(o => o.status === 'delivered').sort((a,b) => b.tsDelivered - a.tsDelivered);
-            
-            if(deliveredOrders.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-gray-500">لا يوجد أوردرات تم تسليمها</td></tr>';
+        window.dispatchOrder = async (id) => {
+            const delId = document.getElementById(`del-select-${id}`).value;
+            if (!delId) return showToast('اختر مندوباً أولاً', 'error');
+            await update(ref(db, `orders/${id}`), { status: 'out', deliveryId: delId, tsOut: Date.now() });
+            showToast('خرج الطلب للتوصيل');
+        };
+
+        const renderDeliveryList = () => {
+            const list = document.getElementById('delivery-list');
+            const myOrders = allOrders.filter(o => o.deliveryId === currentUser.id && o.status === 'out');
+
+            if (!currentUser.isActive) {
+                list.innerHTML = '<div class="p-6 text-center text-red-500 bg-red-50 rounded-xl">يرجى تسجيل الحضور للبدء</div>';
                 return;
             }
 
-            tbody.innerHTML = deliveredOrders.map(o => `
-                <tr class="hover:bg-gray-50">
-                    <td class="p-2 font-bold text-gray-800">#${o.orderId}</td>
-                    <td class="p-2 text-gray-600">${o.clientName}</td>
-                    <td class="p-2 text-blue-600 font-bold">${allUsers.find(u=>u._id===o.deliveryBoyId)?.name || '-'}</td>
-                    <td class="p-2 text-green-600 font-bold">${o.value} ج</td>
-                    <td class="p-2"><span class="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded">${o.payment}</span></td>
-                    <td class="p-2 text-xs text-gray-500">${formatDate(o.tsDelivered)}</td>
-                </tr>
-            `).join('');
-        };
-
-        window.updateOrderStatus = async (docId, newStatus, extraData = {}) => {
-            if(!db) return;
-            const updates = { status: newStatus, ...extraData };
-            if(newStatus === 'preparing') updates.tsPrepStart = Date.now();
-            if(newStatus === 'delivered') updates.tsDelivered = Date.now();
-            
-            try {
-                await update(ref(db, `orders/${docId}`), updates);
-            } catch(e) {
-                showToast('خطأ في التحديث', 'error');
-            }
-        };
-
-        window.dispatchOrder = async (docId) => {
-            const select = document.getElementById(`sel-del-${docId}`);
-            const delId = select.value;
-            if(!delId) {
-                showToast('يرجى تحديد مندوب التوصيل', 'error');
-                return;
-            }
-            await window.updateOrderStatus(docId, 'out', { deliveryBoyId: delId, tsOut: Date.now() });
-            showToast('تم إخراج الأوردر مع المندوب');
-        };
-
-        // ================= التوصيل =================
-        const renderDeliveryStatus = () => {
-            const toggle = document.getElementById('delivery-attendance-toggle');
-            const txt = document.getElementById('delivery-status-text');
-            
-            toggle.checked = currentUser.isActive;
-            if (currentUser.isActive) {
-                txt.textContent = 'متصل (حاضر)';
-                txt.classList.replace('text-red-500', 'text-green-500');
-            } else {
-                txt.textContent = 'غير متصل (خروج)';
-                txt.classList.replace('text-green-500', 'text-red-500');
-            }
-        };
-
-        document.getElementById('delivery-attendance-toggle').addEventListener('change', async (e) => {
-            if(!db) return;
-            try {
-                await update(ref(db, `users/${currentUser._id}`), { isActive: e.target.checked });
-                showToast(e.target.checked ? 'تم تسجيل الحضور' : 'تم تسجيل الانصراف');
-            } catch(err) {
-                e.target.checked = !e.target.checked; 
-            }
-        });
-
-        const renderDeliveryOrders = () => {
-            const container = document.getElementById('delivery-orders-container');
-            const myOrders = allOrders.filter(o => o.deliveryBoyId === currentUser._id && o.status === 'out');
-
-            if(!currentUser.isActive) {
-                container.innerHTML = '<div class="col-span-full text-center p-8 bg-red-50 text-red-500 rounded-xl font-bold border border-red-100">يجب تسجيل الحضور لرؤية الأوردرات.</div>';
+            if (myOrders.length === 0) {
+                list.innerHTML = '<div class="p-6 text-center text-gray-400">لا يوجد طلبات مسندة لك الآن</div>';
                 return;
             }
 
-            if(myOrders.length === 0) {
-                container.innerHTML = '<div class="col-span-full text-center p-8 bg-gray-50 text-gray-500 rounded-xl font-bold border border-gray-100">لا يوجد أوردرات مسندة لك حالياً.</div>';
-                return;
-            }
-
-            container.innerHTML = myOrders.map(o => `
-                <div class="glass-panel p-5 rounded-xl shadow-md border-l-4 border-blue-500">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="font-bold text-xl text-gray-800">#${o.orderId}</span>
-                        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold">${o.branch}</span>
+            list.innerHTML = myOrders.map(o => `
+                <div class="card p-5 animate-slide-up">
+                    <div class="flex justify-between mb-3">
+                        <span class="font-bold text-lg">#${o.orderId}</span>
+                        <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-lg text-xs font-bold">${o.branch}</span>
                     </div>
-                    <div class="space-y-2 mb-4 text-sm bg-gray-50 p-3 rounded">
-                        <p><i class="fa-solid fa-user text-gray-400 w-5"></i> <span class="font-bold">${o.clientName}</span></p>
-                        <p><i class="fa-solid fa-location-dot text-gray-400 w-5"></i> ${o.area}</p>
-                        <p><i class="fa-solid fa-money-bill-wave text-green-500 w-5"></i> <span class="font-bold text-lg">${o.value} ج.م</span> (${o.payment})</p>
+                    <div class="space-y-3 mb-5">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500"><i class="fa-solid fa-user"></i></div>
+                            <div><p class="text-xs text-gray-500">العميل</p><p class="font-bold">${o.client}</p></div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500"><i class="fa-solid fa-map-pin"></i></div>
+                            <div><p class="text-xs text-gray-500">العنوان</p><p class="font-bold">${o.area}</p></div>
+                        </div>
+                        <div class="bg-green-50 p-3 rounded-xl border border-green-100 flex justify-between items-center">
+                            <span class="text-green-700 font-bold">المطلوب تحصيله:</span>
+                            <span class="text-xl font-bold text-green-700">${o.val} ج.م</span>
+                        </div>
                     </div>
-                    <button onclick="window.confirmDelivery('${o._id}')" class="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg shadow-md font-bold text-lg transition flex justify-center items-center gap-2">
-                        <i class="fa-solid fa-check-circle"></i> تم التسليم
+                    <button onclick="confirmDeliver('${o.id}')" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-200 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-circle-check"></i> تأكيد تسليم الطلب
                     </button>
                 </div>
             `).join('');
         };
 
-        window.confirmDelivery = (docId) => {
-            const btn = event.currentTarget;
-            btn.innerHTML = '<div class="loader w-5 h-5 border-2 border-white border-top-2 border-t-transparent"></div> جاري تحديد الموقع...';
-            btn.disabled = true;
-
-            const onSuccess = (position) => {
-                const loc = { lat: position.coords.latitude, lng: position.coords.longitude };
-                window.updateOrderStatus(docId, 'delivered', { location: loc });
-                showToast('تم تأكيد التسليم وحفظ الموقع بنجاح!');
-            };
-
-            const onError = (error) => {
-                window.updateOrderStatus(docId, 'delivered', { location: 'تعذر التحديد' });
-                showToast('تم تأكيد التسليم (تعذر تحديد الموقع الدقيق)', 'error');
-            };
-
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(onSuccess, onError, { timeout: 10000 });
-            } else {
-                onError();
-            }
+        window.confirmDeliver = async (id) => {
+            // محاولة الحصول على الموقع
+            let loc = "غير متاح";
+            try {
+                const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, {timeout: 5000}));
+                loc = `${pos.coords.latitude},${pos.coords.longitude}`;
+            } catch(e) {}
+            
+            await update(ref(db, `orders/${id}`), { status: 'delivered', tsDelivered: Date.now(), location: loc });
+            showToast('تم التسليم، أحسنت!');
         };
 
-        // ================= التقارير =================
-        const renderReports = () => {
-            const tbody = document.getElementById('reports-tbody');
-            let reportOrders = allOrders;
-            if (currentUser.role === 'branch' || currentUser.role === 'employee') {
-                reportOrders = allOrders.filter(o => o.branch === currentUser.branch);
-            }
-
-            if(reportOrders.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4 text-gray-500">لا توجد بيانات للعرض</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = reportOrders.map(o => {
-                const prepTime = o.tsOut && o.tsPrepStart ? formatTimeDiff(o.tsOut - o.tsPrepStart) : '-';
-                const delTime = o.tsDelivered && o.tsOut ? formatTimeDiff(o.tsDelivered - o.tsOut) : '-';
-                
-                return `
-                <tr class="hover:bg-gray-50 transition border-b">
-                    <td class="p-3 font-bold text-gray-800">#${o.orderId}</td>
-                    <td class="p-3 text-gray-600">${o.branch}</td>
-                    <td class="p-3 text-gray-600">${o.clientName}</td>
-                    <td class="p-3 text-blue-600">${allUsers.find(u=>u._id===o.deliveryBoyId)?.name || '-'}</td>
-                    <td class="p-3 font-bold text-green-600">${o.value} ج</td>
-                    <td class="p-3"><span class="text-xs px-2 py-1 rounded ${statusColors[o.status]}">${statusNames[o.status]}</span></td>
-                    <td class="p-3 text-gray-500 text-xs">${prepTime}</td>
-                    <td class="p-3 text-gray-500 text-xs font-bold">${delTime}</td>
+        const renderUsersTable = () => {
+            const tbody = document.getElementById('users-table-body');
+            tbody.innerHTML = allUsers.map(u => `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600">${u.name[0]}</div>
+                            <span class="font-bold text-slate-700">${u.name}</span>
+                        </div>
+                    </td>
+                    <td class="p-3 font-mono text-xs text-blue-600 font-bold">${u.code}</td>
+                    <td class="p-3"><span class="text-[10px] bg-slate-100 px-2 py-1 rounded">${getRoleLabel(u.role)}</span></td>
+                    <td class="p-3 text-gray-500">${u.branch || '--'}</td>
+                    <td class="p-3">
+                        <button onclick="deleteUser('${u.id}')" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-trash-can"></i></button>
+                    </td>
                 </tr>
-            `}).join('');
+            `).join('');
         };
 
-        // Initialize Application
-        initFirebase();
+        const renderReports = () => {
+            const tbody = document.getElementById('reports-table-body');
+            tbody.innerHTML = allOrders.map(o => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-3 font-bold">#${o.orderId}</td>
+                    <td class="p-3 text-xs text-gray-500">${o.branch}</td>
+                    <td class="p-3 text-xs font-bold">${o.client}</td>
+                    <td class="p-3 text-xs">${allUsers.find(u=>u.id===o.deliveryId)?.name || '--'}</td>
+                    <td class="p-3"><span class="status-badge ${getStatusColor(o.status)}">${getStatusLabel(o.status)}</span></td>
+                    <td class="p-3 text-center">
+                        ${o.location && o.location !== 'غير متاح' ? `<a href="https://maps.google.com/?q=${o.location}" target="_blank" class="text-blue-500"><i class="fa-solid fa-location-arrow"></i></a>` : '<i class="fa-solid fa-ban text-gray-300"></i>'}
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        const renderDeliveryStatus = () => {
+            const toggle = document.getElementById('delivery-toggle');
+            const label = document.getElementById('delivery-status-label');
+            if (toggle && currentUser) {
+                toggle.checked = currentUser.isActive;
+                label.innerText = currentUser.isActive ? 'متصل ومستعد' : 'غير متصل (خروج)';
+                label.className = `font-bold ${currentUser.isActive ? 'text-green-500' : 'text-red-500'}`;
+            }
+        };
+
+        document.getElementById('delivery-toggle').addEventListener('change', async (e) => {
+            await update(ref(db, `users/${currentUser.id}`), { isActive: e.target.checked });
+            showToast(e.target.checked ? 'أنت الآن متصل' : 'تم تسجيل الخروج من العمل');
+        });
+
+        // ================= المساعدات (Helpers) =================
+
+        const getRoleLabel = r => ({ 'manager': 'مدير نظام', 'branch': 'مسؤول فرع', 'employee': 'موظف', 'delivery': 'مندوب' }[r] || r);
+        const getStatusLabel = s => ({ 'pending': 'بانتظار التحضير', 'out': 'خرج للتوصيل', 'delivered': 'تم التسليم' }[s] || s);
+        const getStatusColor = s => ({ 'pending': 'bg-yellow-100 text-yellow-700', 'out': 'bg-purple-100 text-purple-700', 'delivered': 'bg-green-100 text-green-700' }[s]);
+
+        window.toggleUserForm = () => document.getElementById('user-modal').classList.toggle('hidden');
+        window.setOrderTab = (tab) => {
+            orderTab = tab;
+            document.getElementById('tab-active').className = tab === 'active' ? 'flex-1 py-2 text-sm font-bold rounded-lg transition bg-blue-600 text-white shadow' : 'flex-1 py-2 text-sm font-bold rounded-lg transition text-gray-500 hover:bg-gray-50';
+            document.getElementById('tab-done').className = tab === 'done' ? 'flex-1 py-2 text-sm font-bold rounded-lg transition bg-blue-600 text-white shadow' : 'flex-1 py-2 text-sm font-bold rounded-lg transition text-gray-500 hover:bg-gray-50';
+            renderOrdersGrid();
+        };
+
+        const updateBranchesList = () => {
+            const branches = [...new Set(allUsers.filter(u => u.branch).map(u => u.branch))];
+            allOrders.forEach(o => { if(o.branch && !branches.includes(o.branch)) branches.push(o.branch); });
+            document.getElementById('branches-list').innerHTML = branches.map(b => `<option value="${b}">`).join('');
+            
+            const filter = document.getElementById('branch-filter-select');
+            const currentVal = filter.value;
+            filter.innerHTML = `<option value="all">جميع الفروع</option>` + branches.map(b => `<option value="${b}">${b}</option>`).join('');
+            filter.value = currentVal;
+        };
+
+        document.getElementById('branch-filter-select').addEventListener('change', renderOrdersGrid);
+
+        window.deleteUser = async (id) => {
+            if (confirm('هل تريد حذف هذا الموظف نهائياً؟')) {
+                await remove(ref(db, `users/${id}`));
+                showToast('تم الحذف');
+            }
+        };
+
+        // التشغيل
+        document.getElementById('current-date').innerText = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        document.getElementById('view-login').classList.remove('hidden');
+        startSync();
 
     </script>
 </body>
 </html>
 
 
-```

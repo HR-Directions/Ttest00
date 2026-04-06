@@ -281,10 +281,18 @@
                 // إعدادات الاتصال بـ Realtime Database
                 const firebaseConfig = {
                     databaseURL: "https://delivery-2-1d699-default-rtdb.firebaseio.com/",
-                    projectId: "delivery-2-1d699",
-                    apiKey: " apiKey: "AIzaSyAnwZILhOW3aA5evrJ5IWrRUAve-EgQjuI", 
-                    authDomain: "delivery-2-1d699.firebaseapp.com"
-                };
+                    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAnwZILhOW3aA5evrJ5IWrRUAve-EgQjuI",
+  authDomain: "delivery-2-1d699.firebaseapp.com",
+  databaseURL: "https://delivery-2-1d699-default-rtdb.firebaseio.com",
+  projectId: "delivery-2-1d699",
+  storageBucket: "delivery-2-1d699.firebasestorage.app",
+  messagingSenderId: "1043824371245",
+  appId: "1:1043824371245:web:96f4a7ffe3540dd78bfaa4",
+  measurementId: "G-GPL0M905FD"
+};
+            
                 
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);

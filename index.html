@@ -219,7 +219,6 @@
                                     <th class="p-4 font-bold">اسم الفرع</th>
                                     <th class="p-4 font-bold">كود الفرع</th>
                                     <th class="p-4 font-bold">كلمة مرور الفرع</th>
-                                    
                                     <th class="p-4 font-bold text-center">إجراءات</th>
                                 </tr>
                             </thead>
@@ -324,6 +323,7 @@
         </main>
     </div>
 
+    <!-- User Modal -->
     <div id="user-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="bg-white w-full max-w-md rounded-[2rem] p-8 shadow-2xl transform scale-95 transition-transform duration-300" id="user-modal-content">
             <div class="flex justify-between items-center mb-6">
@@ -369,6 +369,7 @@
         </div>
     </div>
 
+    <!-- Branch Modal -->
     <div id="branch-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl transform scale-95 transition-transform duration-300" id="branch-modal-content">
             <div class="flex justify-between items-center mb-6">
@@ -377,19 +378,33 @@
             </div>
             <form id="form-branch" class="space-y-4">
                 <input type="hidden" id="br-id">
+                
                 <div>
                     <label class="block text-xs font-bold text-slate-500 mb-1">اسم الفرع</label>
-                        <label class="block text-xs font-bold text-slate-500 mb-1">كود الفرع</label>
-                        <label class="block text-xs font-bold text-slate-500 mb-1">كلمة مرور الفرع</label>
-                    <input type="text" id="br-name" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold" required>
+                    <input type="text" id="br-name" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold" placeholder="مثال: مدينة نصر" required>
                 </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">كود الفرع</label>
+                        <input type="text" id="br-code" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-mono text-center font-bold" placeholder="مثال: NASR-01" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">كلمة مرور الفرع</label>
+                        <input type="text" id="br-password" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••" required>
+                    </div>
+                </div>
+
                 <div class="pt-4">
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg">حفظ الفرع</button>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-floppy-disk"></i> حفظ الفرع
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Order Modal -->
     <div id="order-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="bg-white w-full max-w-lg rounded-[2rem] p-8 shadow-2xl transform scale-95 transition-transform duration-300" id="order-modal-content">
             <div class="flex justify-between items-center mb-6">
@@ -606,11 +621,14 @@
             document.getElementById('form-branch').reset();
             document.getElementById('br-id').value = '';
             document.getElementById('branch-modal-title').innerText = 'إضافة فرع جديد';
+            
             if(id) {
                 const b = allBranches.find(x => x.id === id);
                 if(b) {
                     document.getElementById('br-id').value = id;
-                    document.getElementById('br-name').value = b.name;
+                    document.getElementById('br-name').value = b.name || '';
+                    document.getElementById('br-code').value = b.code || '';
+                    document.getElementById('br-password').value = b.password || '';
                     document.getElementById('branch-modal-title').innerText = 'تعديل الفرع';
                 }
             }
@@ -620,20 +638,40 @@
         document.getElementById('form-branch').addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('br-id').value;
-            const name = document.getElementById('br-name').value;
-            if(id) { await update(ref(db, `branches/${id}`), { name }); showToast('تم التعديل'); }
-            else { await push(ref(db, 'branches'), { name }); showToast('تمت إضافة الفرع'); }
+            
+            const data = {
+                name: document.getElementById('br-name').value,
+                code: document.getElementById('br-code').value,
+                password: document.getElementById('br-password').value
+            };
+
+            if(id) { 
+                await update(ref(db, `branches/${id}`), data); 
+                showToast('تم تعديل بيانات الفرع بنجاح'); 
+            } else { 
+                await push(ref(db, 'branches'), data); 
+                showToast('تمت إضافة الفرع الجديد'); 
+            }
             closeModal('branch-modal');
         });
 
         window.deleteBranch = async (id) => {
-            if(confirm('هل أنت متأكد من حذف الفرع؟')) { await remove(ref(db, `branches/${id}`)); showToast('تم الحذف'); }
+            if(confirm('هل أنت متأكد من حذف الفرع بشكل نهائي؟')) { 
+                await remove(ref(db, `branches/${id}`)); 
+                showToast('تم الحذف بنجاح'); 
+            }
         };
 
         const renderBranchesTable = () => {
             document.getElementById('branches-table-body').innerHTML = allBranches.map(b => `
                 <tr class="hover:bg-slate-50 transition border-b border-slate-100">
                     <td class="p-4 font-black text-slate-700">${b.name}</td>
+                    <td class="p-4 font-mono text-sm text-slate-500 font-bold">${b.code || '<span class="text-slate-300">-</span>'}</td>
+                    <td class="p-4">
+                        <span class="text-xs font-bold text-slate-600 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm">
+                            ${b.password || '<span class="text-slate-300">-</span>'}
+                        </span>
+                    </td>
                     <td class="p-4 text-center space-x-2 space-x-reverse">
                         <button onclick="openBranchModal('${b.id}')" class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition inline-flex items-center justify-center"><i class="fa-solid fa-pen text-xs"></i></button>
                         <button onclick="deleteBranch('${b.id}')" class="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition inline-flex items-center justify-center"><i class="fa-solid fa-trash-can text-xs"></i></button>
@@ -838,3 +876,4 @@
     </script>
 </body>
 </html>
+

@@ -420,7 +420,7 @@
                         </select>
                     </div>
                 </div>
-                <button type="submit" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-lg mt-4">حفظ البيانات</button>
+                <button type="submit" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-lg mt-4">حفظ وإرسال رسالة واتساب</button>
             </form>
         </div>
     </div>
@@ -694,14 +694,55 @@
             if(['branch', 'employee'].includes(currentUser.role)) { document.getElementById('ord-branch').value = currentUser.branch; document.getElementById('add-ord-branch-container').style.display = 'none'; }
             openModal('add-order-modal');
         };
+        
+        // --- التعديل المضاف لإرسال رسالة واتساب ---
         document.getElementById('form-order').addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            // سحب البيانات من النموذج
+            const orderId = document.getElementById('ord-id').value;
+            const clientName = document.getElementById('ord-client').value;
+            let clientPhone = document.getElementById('ord-client-phone').value;
+            const orderValue = document.getElementById('ord-value').value;
+            const orderArea = document.getElementById('ord-area').value;
+            const branch = ['branch', 'employee'].includes(currentUser.role) ? currentUser.branch : document.getElementById('ord-branch').value;
+            const payMethod = document.getElementById('ord-payment').value;
+
             const orderData = {
-                orderId: document.getElementById('ord-id').value, client: document.getElementById('ord-client').value, clientPhone: document.getElementById('ord-client-phone').value,
-                val: document.getElementById('ord-value').value, area: document.getElementById('ord-area').value, branch: ['branch', 'employee'].includes(currentUser.role) ? currentUser.branch : document.getElementById('ord-branch').value,
-                pay: document.getElementById('ord-payment').value, status: 'pending', ts: Date.now(), deliveryId: ''
+                orderId: orderId, client: clientName, clientPhone: clientPhone,
+                val: orderValue, area: orderArea, branch: branch,
+                pay: payMethod, status: 'pending', ts: Date.now(), deliveryId: ''
             };
-            await push(ref(db, 'orders'), orderData); showToast('تم إضافة الطلب وإرساله'); closeModal('add-order-modal');
+            
+            // حفظ الطلب في قاعدة البيانات
+            await push(ref(db, 'orders'), orderData); 
+            showToast('تم إضافة الطلب وإرساله'); 
+            closeModal('add-order-modal');
+
+            // --- إعداد رابط ورسالة واتساب ---
+            // تنظيف رقم الهاتف وإضافة كود الدولة (مصر كمثال)
+            let formattedPhone = clientPhone.replace(/[^0-9]/g, '');
+            if (formattedPhone.startsWith('01')) {
+                formattedPhone = '2' + formattedPhone;
+            }
+
+            // رابط التتبع (يمكنك تعديل your-domain.com برابط موقعك الفعلي لاحقاً)
+            const trackingLink = `https://your-domain.com/track?id=${orderId}`;
+
+            // نص الرسالة
+            const message = `مرحباً ${clientName}،
+تم إضافة طلبك بنجاح.
+
+📦 *رقم الطلب:* #${orderId}
+💰 *القيمة:* ${orderValue} ج.م
+💳 *طريقة التحصيل:* ${payMethod}
+
+يمكنك متابعة حالة طلبك من خلال الرابط التالي:
+${trackingLink}`;
+
+            // فتح نافذة واتساب في علامة تبويب جديدة
+            const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
         });
 
         // ================= Cashier System (ENHANCED) =================
@@ -896,3 +937,4 @@
     </script>
 </body>
 </html>
+

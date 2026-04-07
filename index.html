@@ -1,4 +1,4 @@
-
+```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -425,7 +425,7 @@
         </div>
     </div>
 
-    <!-- Cashier Confirm Modal (ENHANCED) -->
+    <!-- Cashier Confirm Modal -->
     <div id="cashier-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl transform scale-95 transition-transform duration-300" id="cashier-modal-content">
             <div class="flex justify-between items-center mb-4"><h3 class="text-xl font-black text-slate-800">تأكيد الإغلاق المالي</h3><button type="button" onclick="closeModal('cashier-modal')" class="w-8 h-8 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button></div>
@@ -486,7 +486,7 @@
         let allUsers = [];
         let allOrders = [];
         let allBranches = [];
-        let allTransfers = []; // مصفوفة أرقام التحويل الجديدة
+        let allTransfers = [];
         let orderTab = 'active';
         
         // ================= Audio System =================
@@ -646,6 +646,8 @@
             });
             if (id === 'view-orders') { document.getElementById('branch-filter-select').classList.toggle('hidden', currentUser.role !== 'manager'); }
             if (id === 'view-transfers') renderTransfersTable();
+            if (id === 'view-branches') renderBranchesTable();
+            if (id === 'view-team') renderUsersTable();
         };
 
         document.getElementById('login-form').addEventListener('submit', (e) => {
@@ -657,7 +659,122 @@
         });
         window.logout = () => { location.reload(); };
 
-        // ================= CRUD Transfer Numbers (NEW) =================
+        // ================= CRUD Branches =================
+        window.openBranchModal = (id = null) => {
+            document.getElementById('form-branch').reset();
+            document.getElementById('br-id').value = '';
+            document.getElementById('branch-modal-title').innerText = 'إضافة فرع';
+            if (id) {
+                const b = allBranches.find(x => x.id === id);
+                if (b) {
+                    document.getElementById('br-id').value = id;
+                    document.getElementById('br-name').value = b.name;
+                    document.getElementById('br-code').value = b.code;
+                    document.getElementById('br-password').value = b.password;
+                    document.getElementById('branch-modal-title').innerText = 'تعديل الفرع';
+                }
+            }
+            openModal('branch-modal');
+        };
+
+        document.getElementById('form-branch').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('br-id').value;
+            const bData = {
+                name: document.getElementById('br-name').value,
+                code: document.getElementById('br-code').value,
+                password: document.getElementById('br-password').value
+            };
+            if (id) { await update(ref(db, `branches/${id}`), bData); showToast('تم التعديل'); }
+            else { await push(ref(db, 'branches'), bData); showToast('تم الإضافة'); }
+            closeModal('branch-modal');
+        });
+
+        window.deleteBranch = async (id) => {
+            if (confirm('هل أنت متأكد من حذف الفرع؟')) { await remove(ref(db, `branches/${id}`)); showToast('تم الحذف'); }
+        };
+
+        const renderBranchesTable = () => {
+            if(!document.getElementById('branches-table-body')) return;
+            document.getElementById('branches-table-body').innerHTML = allBranches.map(b => `
+                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                    <td class="p-4 font-black">${b.name}</td>
+                    <td class="p-4 font-mono font-bold text-slate-600">${b.code}</td>
+                    <td class="p-4 text-center space-x-2 space-x-reverse">
+                        <button onclick="openBranchModal('${b.id}')" class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition"><i class="fa-solid fa-pen text-xs"></i></button>
+                        <button onclick="deleteBranch('${b.id}')" class="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        // ================= CRUD Users =================
+        window.openUserModal = (id = null) => {
+            document.getElementById('form-user').reset();
+            document.getElementById('usr-id').value = '';
+            document.getElementById('user-modal-title').innerText = 'إضافة موظف';
+            togglePhoneField();
+            if (id) {
+                const u = allUsers.find(x => x.id === id);
+                if (u) {
+                    document.getElementById('usr-id').value = id;
+                    document.getElementById('usr-name').value = u.name;
+                    document.getElementById('usr-code').value = u.code;
+                    document.getElementById('usr-pass').value = u.password;
+                    document.getElementById('usr-role').value = u.role;
+                    document.getElementById('usr-branch').value = u.branch || '';
+                    if(u.phone) document.getElementById('usr-phone').value = u.phone;
+                    document.getElementById('user-modal-title').innerText = 'تعديل الموظف';
+                    togglePhoneField();
+                }
+            }
+            openModal('user-modal');
+        };
+
+        window.togglePhoneField = () => {
+            const r = document.getElementById('usr-role').value;
+            document.getElementById('usr-phone-container').style.display = r === 'delivery' ? 'block' : 'none';
+        };
+
+        document.getElementById('form-user').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('usr-id').value;
+            const uData = {
+                name: document.getElementById('usr-name').value,
+                code: document.getElementById('usr-code').value,
+                password: document.getElementById('usr-pass').value,
+                role: document.getElementById('usr-role').value,
+                branch: document.getElementById('usr-branch').value,
+                phone: document.getElementById('usr-role').value === 'delivery' ? document.getElementById('usr-phone').value : '',
+                isActive: false
+            };
+            if (id) { await update(ref(db, `users/${id}`), uData); showToast('تم التعديل'); }
+            else { await push(ref(db, 'users'), uData); showToast('تم الإضافة'); }
+            closeModal('user-modal');
+        });
+
+        window.deleteUser = async (id) => {
+            if (id === currentUser.id) return showToast('لا يمكنك حذف حسابك الحالي!', 'error');
+            if (confirm('هل أنت متأكد من حذف الموظف؟')) { await remove(ref(db, `users/${id}`)); showToast('تم الحذف'); }
+        };
+
+        const renderUsersTable = () => {
+            if(!document.getElementById('users-table-body')) return;
+            document.getElementById('users-table-body').innerHTML = allUsers.map(u => `
+                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                    <td class="p-4 font-black">${u.name}</td>
+                    <td class="p-4 text-slate-500 font-bold dir-ltr text-right">${u.phone || '-'}</td>
+                    <td class="p-4"><span class="text-xs font-bold px-3 py-1 rounded-lg bg-blue-50 text-blue-700">${getRoleLabel(u.role)}</span></td>
+                    <td class="p-4 text-sm font-bold text-slate-600">${u.branch || '-'}</td>
+                    <td class="p-4 text-center space-x-2 space-x-reverse">
+                        <button onclick="openUserModal('${u.id}')" class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition"><i class="fa-solid fa-pen text-xs"></i></button>
+                        <button onclick="deleteUser('${u.id}')" class="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        // ================= CRUD Transfer Numbers =================
         window.openTransferModal = (id = null) => {
             document.getElementById('form-transfer').reset(); document.getElementById('tf-id').value = ''; document.getElementById('transfer-modal-title').innerText = 'رقم تحويل جديد';
             if(id) {
@@ -675,6 +792,7 @@
         });
         window.deleteTransfer = async (id) => { if(confirm('متأكد من الحذف؟')) { await remove(ref(db, `transferNumbers/${id}`)); showToast('تم الحذف'); } };
         const renderTransfersTable = () => {
+            if(!document.getElementById('transfers-table-body')) return;
             document.getElementById('transfers-table-body').innerHTML = allTransfers.map(t => `
                 <tr class="hover:bg-slate-50 border-b border-slate-100">
                     <td class="p-4 font-black">${t.name}</td>
@@ -695,11 +813,9 @@
             openModal('add-order-modal');
         };
         
-        // --- التعديل المضاف لإرسال رسالة واتساب ---
         document.getElementById('form-order').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            // سحب البيانات من النموذج
             const orderId = document.getElementById('ord-id').value;
             const clientName = document.getElementById('ord-client').value;
             let clientPhone = document.getElementById('ord-client-phone').value;
@@ -714,22 +830,17 @@
                 pay: payMethod, status: 'pending', ts: Date.now(), deliveryId: ''
             };
             
-            // حفظ الطلب في قاعدة البيانات
             await push(ref(db, 'orders'), orderData); 
             showToast('تم إضافة الطلب وإرساله'); 
             closeModal('add-order-modal');
 
-            // --- إعداد رابط ورسالة واتساب ---
-            // تنظيف رقم الهاتف وإضافة كود الدولة (مصر كمثال)
             let formattedPhone = clientPhone.replace(/[^0-9]/g, '');
             if (formattedPhone.startsWith('01')) {
                 formattedPhone = '2' + formattedPhone;
             }
 
-            // رابط التتبع (يمكنك تعديل your-domain.com برابط موقعك الفعلي لاحقاً)
             const trackingLink = `https://your-domain.com/track?id=${orderId}`;
 
-            // نص الرسالة
             const message = `مرحباً ${clientName}،
 تم إضافة طلبك بنجاح.
 
@@ -740,12 +851,11 @@
 يمكنك متابعة حالة طلبك من خلال الرابط التالي:
 ${trackingLink}`;
 
-            // فتح نافذة واتساب في علامة تبويب جديدة
             const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
             window.open(whatsappUrl, '_blank');
         });
 
-        // ================= Cashier System (ENHANCED) =================
+        // ================= Cashier System =================
         const renderCashierGrid = () => {
             let f = allOrders.filter(o => o.status === 'delivered');
             if (currentUser.role !== 'manager') f = f.filter(o => o.branch === currentUser.branch);
@@ -764,7 +874,6 @@ ${trackingLink}`;
         window.openCashierModal = (id) => {
             const o = allOrders.find(x => x.id === id); if(!o) return;
             document.getElementById('cash-ord-dbid').value = id; document.getElementById('cash-ord-num').innerText = '#' + o.orderId; document.getElementById('cash-ord-val').value = o.val; document.getElementById('cash-ord-pay').value = o.pay;
-            // Trigger change event to set dynamic fields correctly
             document.getElementById('cash-ord-pay').dispatchEvent(new Event('change'));
             openModal('cashier-modal');
         };
@@ -784,7 +893,7 @@ ${trackingLink}`;
                 const filtered = allTransfers.filter(t => t.type === val);
                 transSelect.innerHTML = `<option value="">-- اختر الرقم المحول إليه --</option>` + filtered.map(t => `<option value="${t.name} - ${t.phone}">${t.name} (${t.phone})</option>`).join('');
             } else {
-                container.classList.add('hidden'); // كاش
+                container.classList.add('hidden');
             }
         });
 
@@ -805,6 +914,23 @@ ${trackingLink}`;
         });
 
         // ================= Delivery & Location =================
+        const renderDeliveryStatus = () => {
+            if (currentUser && currentUser.role === 'delivery') {
+                const toggle = document.getElementById('delivery-toggle');
+                const label = document.getElementById('delivery-status-label');
+                if (toggle && label) {
+                    toggle.checked = currentUser.isActive || false;
+                    if (currentUser.isActive) {
+                        label.innerText = 'نشط ومستعد';
+                        label.className = 'font-black text-green-500 text-lg';
+                    } else {
+                        label.innerText = 'غير متصل';
+                        label.className = 'font-black text-red-500 text-lg';
+                    }
+                }
+            }
+        };
+
         const renderDeliveryList = () => {
             const list = document.getElementById('delivery-list');
             const myOrders = allOrders.filter(o => o.deliveryId === currentUser.id && o.status === 'out');
@@ -832,7 +958,6 @@ ${trackingLink}`;
                     await update(ref(db, `orders/${id}`), { status: 'delivered', tsDelivered: Date.now(), deliveryLocation: loc }); 
                     hideLoader(); showToast('تم تسجيل الموقع والتسليم بنجاح.'); 
                 }, async (err) => {
-                    // Fallback if denied
                     alert("يرجى تفعيل صلاحية الموقع من المتصفح لضمان الجودة، سيتم تسجيل الطلب بدون موقع حالياً.");
                     await update(ref(db, `orders/${id}`), { status: 'delivered', tsDelivered: Date.now() }); 
                     hideLoader(); showToast('تم التسليم (بدون موقع).'); 
@@ -843,10 +968,21 @@ ${trackingLink}`;
         };
 
         document.getElementById('delivery-toggle').addEventListener('change', async (e) => { 
-            if (!e.target.checked && allOrders.some(o => o.deliveryId === currentUser.id && o.status === 'out')) {
+            const isChecked = e.target.checked;
+            if (!isChecked && allOrders.some(o => o.deliveryId === currentUser.id && o.status === 'out')) {
                 e.target.checked = true; return showToast('لديك طلبات قيد التوصيل!', 'error');
             }
-            await update(ref(db, `users/${currentUser.id}`), { isActive: e.target.checked }); showToast(e.target.checked ? 'متصل ومستعد' : 'تسجيل خروج'); 
+            // Update UI immediately
+            const label = document.getElementById('delivery-status-label');
+            if(isChecked) {
+                label.innerText = 'نشط ومستعد';
+                label.className = 'font-black text-green-500 text-lg';
+            } else {
+                label.innerText = 'غير متصل';
+                label.className = 'font-black text-red-500 text-lg';
+            }
+            await update(ref(db, `users/${currentUser.id}`), { isActive: isChecked }); 
+            showToast(isChecked ? 'تم تفعيل الاتصال' : 'تم تسجيل الخروج من العمل'); 
         });
 
         // ================= Reports & Displays =================
@@ -864,14 +1000,19 @@ ${trackingLink}`;
 
             document.getElementById('reports-table-body').innerHTML = reportsData.map(o => {
                 const driverName = allUsers.find(u=>u.id===o.deliveryId)?.name || '--';
-                const locLink = o.deliveryLocation ? `<a href="https://www.google.com/maps/search/?api=1&query=${o.deliveryLocation.lat},${o.deliveryLocation.lng}" target="_blank" class="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded-full inline-flex" title="عرض الخريطة"><i class="fa-solid fa-location-dot"></i></a>` : '<span class="text-slate-300">-</span>';
+                
+                // تحسين زر الخريطة ليظهر بشكل احترافي
+                const locLink = o.deliveryLocation ? 
+                    `<a href="https://www.google.com/maps/search/?api=1&query=${o.deliveryLocation.lat},${o.deliveryLocation.lng}" target="_blank" class="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-3 py-1.5 rounded-lg text-xs font-black transition flex items-center justify-center gap-1 w-max mx-auto shadow-sm" title="عرض الخريطة"><i class="fa-solid fa-location-dot"></i> الخريطة</a>` 
+                    : '<span class="text-slate-400 text-xs font-bold bg-slate-50 px-2 py-1 rounded">بدون موقع</span>';
+                
                 const prepTime = formatTimeDiff(o.ts, o.tsOut);
                 const delTime = formatTimeDiff(o.tsOut, o.tsDelivered);
                 const payInfo = o.status === 'settled' ? `<div class="text-xs text-slate-500 mt-1">${o.payDetails||''}</div>` : '';
 
                 return `
                 <tr class="hover:bg-slate-50 border-b border-slate-50">
-                    <td class="p-4 font-black">#${o.orderId}</td>
+                    <td class="p-4 font-black text-slate-700">#${o.orderId}</td>
                     <td class="p-4 text-xs font-bold text-slate-600">${o.branch}</td>
                     <td class="p-4 text-sm bg-slate-50/50">${prepTime}</td>
                     <td class="p-4 text-sm bg-blue-50/50">${delTime}</td>
@@ -926,10 +1067,6 @@ ${trackingLink}`;
         const getStatusLabel = s => ({ 'pending': 'تحضير', 'out': 'مع المندوب', 'delivered': 'انتظار كاشير', 'settled': 'مغلق مالياً' }[s] || s);
         const getStatusColor = s => ({ 'pending': 'bg-yellow-100 text-yellow-700', 'out': 'bg-purple-100 text-purple-700', 'delivered': 'bg-amber-100 text-amber-700', 'settled': 'bg-green-100 text-green-700' }[s]);
         
-        // Users CRUD Extra
-        window.openUserModal = (id=null)=>{ /* code inside HTML script tags handled previously */ };
-        window.openBranchModal = (id=null)=>{ /* code inside HTML script tags handled previously */ };
-
         document.getElementById('current-date').innerText = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         document.getElementById('view-login').classList.remove('hidden');
         startSync();
@@ -938,3 +1075,5 @@ ${trackingLink}`;
 </body>
 </html>
 
+
+```

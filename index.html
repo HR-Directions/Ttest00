@@ -299,14 +299,13 @@
                 </div>
             </section>
 
-            <!-- Reports (UPDATED: Fully Responsive + Action Buttons) -->
+            <!-- Reports -->
             <section id="view-reports" class="hidden space-y-6 animate-fade-in">
                 <header>
                     <h2 class="text-2xl font-black text-slate-800">السجل العام والتقارير</h2>
                     <p class="text-slate-500 mt-1 text-sm font-bold">سجل شامل للطلبات وإمكانية فتح خرائط مواقع العملاء</p>
                 </header>
                 
-                <!-- Desktop Table View (Hidden on small screens) -->
                 <div class="card overflow-hidden hidden lg:block">
                     <div class="table-container">
                         <table class="w-full text-sm text-right">
@@ -324,9 +323,7 @@
                     </div>
                 </div>
 
-                <!-- Mobile Cards View (Hidden on large screens) -->
                 <div id="reports-mobile-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 lg:hidden">
-                    <!-- Cards will be injected here via JS -->
                 </div>
             </section>
         </main>
@@ -363,7 +360,7 @@
         </div>
     </div>
 
-    <!-- User Modal -->
+    <!-- User Modal (Updated for Edit) -->
     <div id="user-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="bg-white w-full max-w-md rounded-[2rem] p-6 shadow-2xl transform scale-95 transition-transform duration-300 max-h-[90vh] overflow-y-auto" id="user-modal-content">
             <div class="flex justify-between items-center mb-6 sticky top-0 bg-white z-10 pb-2 border-b border-slate-100">
@@ -391,7 +388,7 @@
         </div>
     </div>
 
-    <!-- Branch Modal -->
+    <!-- Branch Modal (Updated for Edit) -->
     <div id="branch-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl transform scale-95 transition-transform duration-300" id="branch-modal-content">
             <div class="flex justify-between items-center mb-6"><h3 id="branch-modal-title" class="text-xl font-black text-slate-800">إضافة فرع</h3><button type="button" onclick="closeModal('branch-modal')" class="w-8 h-8 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button></div>
@@ -407,7 +404,7 @@
         </div>
     </div>
 
-    <!-- Add/Edit Order Modal -->
+    <!-- Add/Edit Order Modal (Updated with Notes) -->
     <div id="add-order-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="bg-white w-full max-w-2xl rounded-[2rem] p-6 shadow-2xl transform scale-95 transition-transform duration-300 max-h-[95vh] overflow-y-auto" id="add-order-modal-content">
             <div class="flex justify-between items-center mb-6 sticky top-0 bg-white z-10 pb-2 border-b border-slate-100"><h3 id="order-modal-title" class="text-xl font-black text-slate-800">بيانات الطلب</h3><button type="button" onclick="closeModal('add-order-modal')" class="w-8 h-8 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button></div>
@@ -427,8 +424,13 @@
                             <option value="انستاباي">تحويل انستاباي</option><option value="محفظة">تحويل محفظة</option>
                         </select>
                     </div>
+                    <!-- حقل الملاحظات الجديد -->
+                    <div class="col-span-1 md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-500 mb-1">ملاحظات الطلب (تظهر للمندوب والفرع)</label>
+                        <textarea id="ord-notes" rows="2" class="w-full bg-slate-50 border border-amber-200 p-3 rounded-xl font-bold focus:ring-2 focus:ring-amber-500 outline-none transition" placeholder="اكتب أي ملاحظة هامة هنا..."></textarea>
+                    </div>
                 </div>
-                <button type="submit" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-lg mt-4">حفظ البيانات</button>
+                <button type="submit" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-lg mt-4">حفظ البيانات وإرسال للواتساب</button>
             </form>
         </div>
     </div>
@@ -470,6 +472,44 @@
                 </div>
 
                 <button type="submit" class="w-full bg-green-600 text-white font-black py-4 rounded-xl shadow-lg mt-4"><i class="fa-solid fa-check-double"></i> إغلاق المديونية</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Driver Smart Confirm Modal (NEW) -->
+    <div id="driver-confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl transform scale-95 transition-transform duration-300" id="driver-confirm-modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-black text-slate-800">تأكيد تسليم الطلب</h3>
+                <button type="button" onclick="closeModal('driver-confirm-modal')" class="w-8 h-8 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-driver-confirm" class="space-y-4">
+                <input type="hidden" id="drv-ord-id">
+                
+                <!-- تحذير التحويلات -->
+                <div id="drv-transfer-warning" class="hidden bg-orange-50 border border-orange-200 p-4 rounded-xl text-center">
+                    <i class="fa-solid fa-triangle-exclamation text-orange-500 text-3xl mb-2 animate-bounce"></i>
+                    <p class="text-base font-black text-orange-800 mb-1">تنبيه هام جداً!</p>
+                    <p class="text-xs font-bold text-orange-700 leading-relaxed">التحصيل عبر (تحويل بنكي / محفظة).<br>يجب التأكد من الفرع أن المبلغ قد تم تحويله بنجاح قبل الضغط على إنهاء التوصيل.</p>
+                </div>
+
+                <!-- حاسبة الكاش -->
+                <div id="drv-cash-calculator" class="hidden space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div class="flex justify-between items-center mb-2 pb-2 border-b border-slate-200">
+                        <span class="text-sm font-bold text-slate-500">حساب العميل (المطلوب):</span>
+                        <span id="drv-required-amount" class="text-2xl font-black text-blue-600">0</span>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-2 text-center">المبلغ المستلم من العميل</label>
+                        <input type="number" id="drv-received-amount" class="w-full bg-white border-2 border-blue-200 p-3 rounded-xl font-black text-center text-xl focus:border-blue-500 outline-none transition" placeholder="اكتب المبلغ هنا..." inputmode="numeric">
+                    </div>
+                    <div class="flex justify-between items-center mt-2 pt-3 border-t border-slate-200 bg-green-50 p-3 rounded-lg border-green-100">
+                        <span class="text-sm font-black text-green-800">الباقي للعميل:</span>
+                        <span id="drv-change-amount" class="text-3xl font-black text-green-600">0</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-black py-4 rounded-xl shadow-lg mt-4 flex justify-center items-center gap-2"><i class="fa-solid fa-location-dot"></i> تسجيل الموقع وإنهاء التوصيل</button>
             </form>
         </div>
     </div>
@@ -593,7 +633,7 @@
                     });
                 }
                 allOrders = fetchedOrders;
-                if (currentUser) { forceRefresh(true); } // Update UI instantly without loader 
+                if (currentUser) { forceRefresh(true); }
                 initialLoad = false;
             });
         };
@@ -688,10 +728,7 @@
                 document.getElementById('app-container').classList.remove('hidden'); 
                 setupUI(); 
                 unlockAudio();
-                
-                // تعديل جوهري: رسم وعرض البيانات تلقائيا فور تسجيل الدخول بنجاح
                 forceRefresh(true);
-                
             } else showToast('بيانات الدخول خاطئة', 'error');
         });
         window.logout = () => { location.reload(); };
@@ -729,33 +766,129 @@
             `).join('');
         };
 
-        // ================= Basic CRUD Branches & Users (To avoid errors) =================
-        window.openBranchModal = () => { document.getElementById('form-branch').reset(); document.getElementById('br-id').value = ''; openModal('branch-modal'); };
-        window.openUserModal = () => { document.getElementById('form-user').reset(); document.getElementById('usr-id').value = ''; openModal('user-modal'); };
-        
+        // ================= CRUD Branches & Users (Updated for Edit) =================
+        window.openBranchModal = () => { 
+            document.getElementById('form-branch').reset(); document.getElementById('br-id').value = ''; 
+            document.getElementById('branch-modal-title').innerText = 'إضافة فرع'; openModal('branch-modal'); 
+        };
+        window.editBranch = (id) => {
+            const b = allBranches.find(x => x.id === id); if(!b) return;
+            document.getElementById('br-id').value = id; document.getElementById('br-name').value = b.name; 
+            document.getElementById('br-code').value = b.code; document.getElementById('br-password').value = b.password;
+            document.getElementById('branch-modal-title').innerText = 'تعديل بيانات الفرع';
+            openModal('branch-modal');
+        };
+        document.getElementById('form-branch').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('br-id').value;
+            const data = { name: document.getElementById('br-name').value, code: document.getElementById('br-code').value, password: document.getElementById('br-password').value };
+            if(id) { await update(ref(db, `branches/${id}`), data); showToast('تم تعديل الفرع'); } 
+            else { await push(ref(db, 'branches'), data); showToast('تم إضافة الفرع بنجاح'); }
+            closeModal('branch-modal');
+        });
+
+        window.openUserModal = () => { 
+            document.getElementById('form-user').reset(); document.getElementById('usr-id').value = ''; 
+            document.getElementById('user-modal-title').innerText = 'إضافة موظف'; togglePhoneField(); openModal('user-modal'); 
+        };
+        window.editUser = (id) => {
+            const u = allUsers.find(x => x.id === id); if(!u) return;
+            document.getElementById('usr-id').value = id; document.getElementById('usr-name').value = u.name; 
+            document.getElementById('usr-code').value = u.code; document.getElementById('usr-pass').value = u.password;
+            document.getElementById('usr-role').value = u.role; document.getElementById('usr-branch').value = u.branch || ''; 
+            document.getElementById('usr-phone').value = u.phone || '';
+            document.getElementById('user-modal-title').innerText = 'تعديل بيانات الموظف';
+            togglePhoneField(); openModal('user-modal');
+        };
+        document.getElementById('form-user').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('usr-id').value;
+            const data = {
+                name: document.getElementById('usr-name').value, code: document.getElementById('usr-code').value, 
+                password: document.getElementById('usr-pass').value, role: document.getElementById('usr-role').value, 
+                branch: document.getElementById('usr-branch').value, phone: document.getElementById('usr-phone').value,
+                isActive: true // Keep active state by default
+            };
+            if(id) { await update(ref(db, `users/${id}`), data); showToast('تم تعديل بيانات الموظف'); } 
+            else { await push(ref(db, 'users'), data); showToast('تم إضافة الموظف بنجاح'); }
+            closeModal('user-modal');
+        });
+
         const renderBranchesTable = () => {
             const tb = document.getElementById('branches-table-body'); if(!tb) return;
-            tb.innerHTML = allBranches.map(b => `<tr class="border-b border-slate-100"><td class="p-4 font-black">${b.name}</td><td class="p-4 font-bold font-mono">${b.code}</td><td class="p-4 text-center"><button class="text-red-500" onclick="alert('للحذف توجه للوحة التحكم')"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
+            tb.innerHTML = allBranches.map(b => `
+                <tr class="hover:bg-slate-50 border-b border-slate-100 transition">
+                    <td class="p-4 font-black">${b.name}</td>
+                    <td class="p-4 font-bold font-mono text-blue-600">${b.code}</td>
+                    <td class="p-4 text-center space-x-2 space-x-reverse">
+                        <button onclick="editBranch('${b.id}')" class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition"><i class="fa-solid fa-pen text-xs"></i></button>
+                        <button class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-slate-200 transition" onclick="alert('للحذف النهائي يرجى التواصل مع الدعم الفني')"><i class="fa-solid fa-trash text-xs"></i></button>
+                    </td>
+                </tr>`).join('');
         };
         const renderUsersTable = () => {
             const tb = document.getElementById('users-table-body'); if(!tb) return;
-            tb.innerHTML = allUsers.map(u => `<tr class="border-b border-slate-100"><td class="p-4 font-black">${u.name}</td><td class="p-4 dir-ltr text-right font-bold text-slate-500">${u.phone||'-'}</td><td class="p-4 text-xs font-bold">${getRoleLabel(u.role)}</td><td class="p-4 text-xs">${u.branch||'-'}</td><td class="p-4 text-center"><button class="text-red-500" onclick="alert('ميزة الحذف تحت الصيانة')"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
+            tb.innerHTML = allUsers.map(u => `
+                <tr class="hover:bg-slate-50 border-b border-slate-100 transition">
+                    <td class="p-4 font-black">${u.name}</td>
+                    <td class="p-4 dir-ltr text-right font-bold text-slate-500">${u.phone||'-'}</td>
+                    <td class="p-4 text-xs font-bold"><span class="bg-slate-100 px-2 py-1 rounded-md text-slate-600">${getRoleLabel(u.role)}</span></td>
+                    <td class="p-4 text-xs font-bold">${u.branch||'-'}</td>
+                    <td class="p-4 text-center space-x-2 space-x-reverse">
+                        <button onclick="editUser('${u.id}')" class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition"><i class="fa-solid fa-pen text-xs"></i></button>
+                        <button class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-slate-200 transition" onclick="alert('ميزة الحذف تحت الصيانة')"><i class="fa-solid fa-trash text-xs"></i></button>
+                    </td>
+                </tr>`).join('');
         };
 
-        // ================= Orders CRUD =================
+        // ================= Orders CRUD (Updated for Notes & WhatsApp) =================
         window.openAddOrderModal = () => {
             document.getElementById('form-order').reset(); document.getElementById('ord-dbid').value = '';
+            document.getElementById('order-modal-title').innerText = 'إضافة طلب جديد';
             if(['branch', 'employee'].includes(currentUser.role)) { document.getElementById('ord-branch').value = currentUser.branch; document.getElementById('add-ord-branch-container').style.display = 'none'; }
             openModal('add-order-modal');
         };
+        
         document.getElementById('form-order').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const orderId = document.getElementById('ord-id').value;
+            const client = document.getElementById('ord-client').value;
+            const clientPhone = document.getElementById('ord-client-phone').value;
+            const val = document.getElementById('ord-value').value;
+            const pay = document.getElementById('ord-payment').value;
+            const notes = document.getElementById('ord-notes').value;
+
             const orderData = {
-                orderId: document.getElementById('ord-id').value, client: document.getElementById('ord-client').value, clientPhone: document.getElementById('ord-client-phone').value,
-                val: document.getElementById('ord-value').value, area: document.getElementById('ord-area').value, branch: ['branch', 'employee'].includes(currentUser.role) ? currentUser.branch : document.getElementById('ord-branch').value,
-                pay: document.getElementById('ord-payment').value, status: 'pending', ts: Date.now(), deliveryId: ''
+                orderId: orderId, client: client, clientPhone: clientPhone,
+                val: val, area: document.getElementById('ord-area').value, 
+                branch: ['branch', 'employee'].includes(currentUser.role) ? currentUser.branch : document.getElementById('ord-branch').value,
+                pay: pay, notes: notes, status: 'pending', ts: Date.now(), deliveryId: ''
             };
-            await push(ref(db, 'orders'), orderData); showToast('تم إضافة الطلب وإرساله'); closeModal('add-order-modal');
+            
+            const dbId = document.getElementById('ord-dbid').value;
+
+            if (dbId) {
+                await update(ref(db, `orders/${dbId}`), orderData);
+                showToast('تم تعديل بيانات الطلب بنجاح');
+            } else {
+                await push(ref(db, 'orders'), orderData);
+                showToast('تم إضافة الطلب وإرسال إشعار للعميل');
+                
+                // --- WhatsApp Message Logic ---
+                let waPhone = clientPhone.trim();
+                // Format phone number correctly for Egypt (Add country code if missing)
+                if (waPhone.startsWith('0')) { waPhone = '2' + waPhone; }
+                else if (!waPhone.startsWith('20') && waPhone.length === 10) { waPhone = '20' + waPhone; }
+
+                const trackingLink = ""; // الرابط فارغ لتقوم بوضعه مستقبلاً
+                const waMessage = `أهلاً بك يا ${client} في إكسبريس للتوصيل 👋\n\n✅ تم استلام طلبك بنجاح.\n\n📦 رقم الطلب: #${orderId}\n💰 المبلغ المطلوب: ${val} ج.م\n💳 طريقة التحصيل: ${pay}\n\nسوف يصلك الطلب في خلال 45 دقيقة بإذن الله ⏳\n\nيمكنك متابعة طلبك من خلال الرابط التالي:\n${trackingLink}`;
+                
+                const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(waMessage)}`;
+                
+                // Open WhatsApp in new tab after a brief delay to ensure Firebase save completes smoothly visually
+                setTimeout(() => { window.open(waUrl, '_blank'); }, 600);
+            }
+            closeModal('add-order-modal');
         });
 
         // ================= Cashier System =================
@@ -817,7 +950,7 @@
             showToast('تم التحصيل وإغلاق الطلب!'); closeModal('cashier-modal');
         });
 
-        // ================= Delivery & Location =================
+        // ================= Delivery & Smart Confirm System (NEW) =================
         const renderDeliveryList = () => {
             const list = document.getElementById('delivery-list');
             if(!list) return;
@@ -832,13 +965,54 @@
                         <div class="flex items-start gap-3"><div class="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center text-blue-500 shrink-0"><i class="fa-solid fa-user text-xs"></i></div><div><p class="font-black">${o.client}</p><p class="text-sm text-blue-600 dir-ltr">${o.clientPhone || ''}</p></div></div>
                         <div class="flex items-start gap-3"><div class="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center text-blue-500 shrink-0"><i class="fa-solid fa-map-location-dot text-xs"></i></div><p class="font-bold text-sm mt-1">${o.area}</p></div>
                         <div class="bg-emerald-50 p-4 rounded-xl flex justify-between items-center"><span class="text-emerald-800 font-bold text-sm">تحصيل (${o.pay}):</span><span class="text-xl font-black text-emerald-700">${o.val} ج.م</span></div>
+                        ${o.notes ? `<div class="bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-start gap-2"><i class="fa-solid fa-note-sticky text-amber-500 mt-1"></i><p class="text-sm font-bold text-amber-800">${o.notes}</p></div>` : ''}
                     </div>
-                    <button onclick="confirmDeliver('${o.id}')" class="w-full bg-green-500 hover:bg-green-600 text-white font-black py-4 rounded-xl flex items-center justify-center gap-2"><i class="fa-solid fa-location-dot"></i> تأكيد التسليم (مع الموقع)</button>
+                    <button onclick="openDriverConfirmModal('${o.id}')" class="w-full bg-green-500 hover:bg-green-600 text-white font-black py-4 rounded-xl flex items-center justify-center gap-2 transition"><i class="fa-solid fa-check-to-slot"></i> إتمام التسليم</button>
                 </div>
             `).join('');
         };
 
-        window.confirmDeliver = (id) => { 
+        window.openDriverConfirmModal = (id) => {
+            const o = allOrders.find(x => x.id === id); if(!o) return;
+            document.getElementById('drv-ord-id').value = id;
+            document.getElementById('drv-received-amount').value = '';
+            document.getElementById('drv-change-amount').innerText = '0';
+
+            const warningBox = document.getElementById('drv-transfer-warning');
+            const calcBox = document.getElementById('drv-cash-calculator');
+            const inputField = document.getElementById('drv-received-amount');
+
+            if (['انستاباي', 'محفظة'].includes(o.pay)) {
+                // Show transfer warning, hide calculator
+                warningBox.classList.remove('hidden');
+                calcBox.classList.add('hidden');
+                inputField.removeAttribute('required');
+            } else {
+                // Show calculator, hide warning
+                warningBox.classList.add('hidden');
+                calcBox.classList.remove('hidden');
+                document.getElementById('drv-required-amount').innerText = o.val;
+                inputField.setAttribute('required', 'true');
+                inputField.dataset.requiredVal = o.val; // Store required amount for math
+            }
+            openModal('driver-confirm-modal');
+        };
+
+        // Realtime Change Calculator
+        document.getElementById('drv-received-amount').addEventListener('input', (e) => {
+            const required = parseFloat(e.target.dataset.requiredVal) || 0;
+            const received = parseFloat(e.target.value) || 0;
+            let change = received - required;
+            if (change < 0) change = 0; // Don't show negative change
+            document.getElementById('drv-change-amount').innerText = change;
+        });
+
+        // Driver Submit & Geo Location
+        document.getElementById('form-driver-confirm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('drv-ord-id').value;
+            closeModal('driver-confirm-modal');
+            
             if (navigator.geolocation) {
                 showLoader('جاري تسجيل الموقع وإرسال التأكيد...');
                 navigator.geolocation.getCurrentPosition(async (pos) => {
@@ -853,7 +1027,7 @@
             } else {
                 alert("المتصفح لا يدعم تحديد الموقع.");
             }
-        };
+        });
 
         document.getElementById('delivery-toggle').addEventListener('change', async (e) => { 
             if (!e.target.checked && allOrders.some(o => o.deliveryId === currentUser.id && o.status === 'out')) {
@@ -862,7 +1036,7 @@
             await update(ref(db, `users/${currentUser.id}`), { isActive: e.target.checked }); showToast(e.target.checked ? 'متصل ومستعد' : 'تسجيل خروج'); 
         });
 
-        // ================= Reports & Displays (UPDATED FOR RESPONSIVENESS AND LOCATION LINKS) =================
+        // ================= Reports & Displays =================
         const formatTimeDiff = (start, end) => {
             if (!start || !end) return '<span class="text-slate-300">-</span>';
             const diffMin = Math.floor((end - start) / 60000);
@@ -875,11 +1049,8 @@
             let reportsData = allOrders;
             if (currentUser.role !== 'manager') reportsData = reportsData.filter(o => o.branch === currentUser.branch);
 
-            // 1. Render Desktop Table Rows
             const tableBodyHtml = reportsData.map(o => {
                 const driverName = allUsers.find(u=>u.id===o.deliveryId)?.name || '--';
-                
-                // Location Button Link (Desktop Design)
                 const locLink = o.deliveryLocation ? 
                     `<a href="https://www.google.com/maps/search/?api=1&query=${o.deliveryLocation.lat},${o.deliveryLocation.lng}" target="_blank" class="inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white border border-emerald-200 px-4 py-2 rounded-xl font-black transition text-xs shadow-sm" title="فتح خرائط جوجل">
                         <i class="fa-solid fa-map-location-dot"></i> الدخول للموقع
@@ -896,71 +1067,39 @@
                         <span class="font-black text-lg block">#${o.orderId}</span>
                         <span class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded mt-1 inline-block">${o.branch}</span>
                     </td>
-                    <td class="p-4 text-sm">
-                        <div class="flex flex-col gap-1">
-                            <span class="bg-slate-50 px-2 py-1 rounded">تحضير: ${prepTime}</span>
-                            <span class="bg-blue-50 px-2 py-1 rounded">توصيل: ${delTime}</span>
-                        </div>
-                    </td>
+                    <td class="p-4 text-sm"><div class="flex flex-col gap-1"><span class="bg-slate-50 px-2 py-1 rounded">تحضير: ${prepTime}</span><span class="bg-blue-50 px-2 py-1 rounded">توصيل: ${delTime}</span></div></td>
                     <td class="p-4 text-sm font-black">${driverName}</td>
                     <td class="p-4 text-center">${locLink}</td>
-                    <td class="p-4">
-                        <div class="flex flex-col gap-1 items-end">
-                            <span class="status-badge ${getStatusColor(o.status)}">${getStatusLabel(o.status)}</span>
-                            <span class="font-black text-green-600 text-lg">${o.status === 'settled' ? o.collectedVal : o.val} ج.م</span>
-                            ${payInfo}
-                        </div>
-                    </td>
+                    <td class="p-4"><div class="flex flex-col gap-1 items-end"><span class="status-badge ${getStatusColor(o.status)}">${getStatusLabel(o.status)}</span><span class="font-black text-green-600 text-lg">${o.status === 'settled' ? o.collectedVal : o.val} ج.م</span>${payInfo}</div></td>
                 </tr>`
             }).join('');
 
-            // 2. Render Mobile Cards
             const mobileCardsHtml = reportsData.map(o => {
                 const driverName = allUsers.find(u=>u.id===o.deliveryId)?.name || '--';
-                
-                // Location Button Link (Mobile Design - Full Width)
                 const locLink = o.deliveryLocation ? 
                     `<a href="https://www.google.com/maps/search/?api=1&query=${o.deliveryLocation.lat},${o.deliveryLocation.lng}" target="_blank" class="w-full flex justify-center items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white shadow-md px-3 py-3 rounded-xl font-black transition mt-4 text-sm">
                         <i class="fa-solid fa-map-location-dot text-lg"></i> الدخول إلى موقع العميل
                     </a>` 
-                    : '<div class="w-full text-center text-slate-400 font-bold text-xs mt-4 bg-slate-50 py-3 rounded-xl border border-slate-100"><i class="fa-solid fa-location-crosshairs"></i> موقع التسليم غير متوفر</div>';
-
-                const prepTime = formatTimeDiff(o.ts, o.tsOut);
-                const delTime = formatTimeDiff(o.tsOut, o.tsDelivered);
+                    : '<div class="w-full text-center text-slate-400 font-bold text-xs mt-4 bg-slate-50 py-3 rounded-xl border border-slate-100"><i class="fa-solid fa-location-crosshairs"></i> موقع غير متوفر</div>';
 
                 return `
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                    <div class="flex justify-between items-center mb-3 pb-3 border-b border-slate-100">
-                        <span class="font-black text-lg text-slate-800">#${o.orderId}</span>
-                        <span class="status-badge ${getStatusColor(o.status)}">${getStatusLabel(o.status)}</span>
-                    </div>
-                    
+                    <div class="flex justify-between items-center mb-3 pb-3 border-b border-slate-100"><span class="font-black text-lg text-slate-800">#${o.orderId}</span><span class="status-badge ${getStatusColor(o.status)}">${getStatusLabel(o.status)}</span></div>
                     <div class="grid grid-cols-2 gap-3 mb-3 text-sm">
                         <div class="bg-slate-50 p-2 rounded-lg text-center"><span class="block text-xs text-slate-400 mb-1">الفرع</span><span class="font-bold text-slate-700">${o.branch}</span></div>
                         <div class="bg-slate-50 p-2 rounded-lg text-center"><span class="block text-xs text-slate-400 mb-1">المندوب</span><span class="font-bold text-slate-700">${driverName}</span></div>
-                        <div class="bg-slate-50 p-2 rounded-lg text-center"><span class="block text-xs text-slate-400 mb-1">التحضير</span>${prepTime}</div>
-                        <div class="bg-blue-50 p-2 rounded-lg text-center border border-blue-100"><span class="block text-xs text-blue-500 mb-1">التوصيل</span>${delTime}</div>
                     </div>
-                    
-                    <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-50">
-                        <span class="text-sm font-bold text-slate-500">مبلغ التحصيل:</span>
-                        <span class="font-black text-xl text-green-600">${o.status === 'settled' ? o.collectedVal : o.val} ج.م</span>
-                    </div>
-                    
-                    ${o.status === 'settled' && o.payDetails ? `<div class="text-xs text-center text-slate-500 bg-slate-50 p-2 rounded-lg mt-2 font-bold">${o.payDetails}</div>` : ''}
-                    
+                    <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-50"><span class="text-sm font-bold text-slate-500">مبلغ التحصيل:</span><span class="font-black text-xl text-green-600">${o.status === 'settled' ? o.collectedVal : o.val} ج.م</span></div>
                     ${locLink}
                 </div>`
             }).join('');
 
             const tbody = document.getElementById('reports-table-body');
             if(tbody) tbody.innerHTML = reportsData.length ? tableBodyHtml : '<tr><td colspan="5" class="p-8 text-center text-slate-400 font-bold">لا توجد تقارير متاحة</td></tr>';
-            
             const mobileGrid = document.getElementById('reports-mobile-grid');
             if(mobileGrid) mobileGrid.innerHTML = reportsData.length ? mobileCardsHtml : '<div class="col-span-full p-8 text-center text-slate-400 font-bold bg-white rounded-2xl border border-slate-200">لا توجد تقارير متاحة</div>';
         };
 
-        // Grid & General Renders
         const renderStats = () => {
             const td = allOrders.filter(o => new Date(o.ts).toDateString() === new Date().toDateString() && (currentUser.role === 'manager' || o.branch === currentUser.branch));
             document.getElementById('stat-total').innerText = td.length; document.getElementById('stat-pending').innerText = td.filter(o => o.status === 'pending').length;
@@ -977,6 +1116,7 @@
             
             grid.innerHTML = f.length === 0 ? '<div class="col-span-full p-8 text-center text-slate-400 font-bold bg-slate-50 rounded-2xl">فارغ</div>' : f.map(o => {
                 const availableDel = allUsers.filter(u => u.role === 'delivery' && u.isActive && (u.branch === o.branch || currentUser.role === 'manager'));
+                const notesHtml = o.notes ? `<div class="mt-2 bg-amber-50 text-amber-700 text-xs font-bold p-2 rounded border border-amber-100 line-clamp-2"><i class="fa-solid fa-note-sticky ml-1"></i>${o.notes}</div>` : '';
                 return `
                 <div class="card p-4 relative border-t-4 ${o.status==='pending'?'border-yellow-400':(o.status==='out'?'border-purple-500':'border-green-500')}">
                     <div class="flex justify-between items-start mb-2">
@@ -984,7 +1124,8 @@
                         <span class="status-badge ${getStatusColor(o.status)} text-[10px]">${getStatusLabel(o.status)}</span>
                     </div>
                     <div class="bg-slate-50 p-2 rounded-lg text-sm mb-2"><p class="font-bold truncate"><i class="fa-solid fa-location-dot text-slate-400 ml-1"></i>${o.area}</p></div>
-                    ${o.status === 'pending' ? `<div class="mt-2"><select id="del-${o.id}" class="w-full text-xs bg-slate-50 border p-2 rounded mb-2 font-bold"><option value="">-- تفويض مندوب --</option>${availableDel.map(d=>`<option value="${d.id}">${d.name}</option>`).join('')}</select><button onclick="dispatchOrder('${o.id}')" class="w-full bg-slate-800 text-white text-xs font-black py-2 rounded">إرسال للتوصيل</button></div>` : (o.status === 'out' ? `<div class="bg-purple-50 p-2 rounded text-xs text-purple-700 text-center font-black">المندوب: ${allUsers.find(u=>u.id===o.deliveryId)?.name}</div>` : '')}
+                    ${notesHtml}
+                    ${o.status === 'pending' ? `<div class="mt-2 pt-2 border-t border-slate-100"><select id="del-${o.id}" class="w-full text-xs bg-slate-50 border p-2 rounded mb-2 font-bold"><option value="">-- تفويض مندوب --</option>${availableDel.map(d=>`<option value="${d.id}">${d.name}</option>`).join('')}</select><button onclick="dispatchOrder('${o.id}')" class="w-full bg-slate-800 text-white text-xs font-black py-2 rounded">إرسال للتوصيل</button></div>` : (o.status === 'out' ? `<div class="mt-2 bg-purple-50 p-2 rounded text-xs text-purple-700 text-center font-black">المندوب: ${allUsers.find(u=>u.id===o.deliveryId)?.name}</div>` : '')}
                 </div>`
             }).join('');
         };
@@ -1004,7 +1145,7 @@
         document.getElementById('current-date').innerText = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         document.getElementById('view-login').classList.remove('hidden');
         
-        startSync(); // Start database sync on background
+        startSync(); // Start database sync
     </script>
 </body>
 </html>

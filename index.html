@@ -925,7 +925,7 @@
                 else if (!waPhone.startsWith('20') && waPhone.length === 10) { waPhone = '20' + waPhone; }
 
                 const trackingLink = ""; 
-                const waMessage = `أهلاً بك يا ${client} في إكسبريس للتوصيل 👋\n\n✅ تم استلام طلبك بنجاح.\n\n📦 رقم الطلب: #${orderId}\n💰 المبلغ المطلوب: ${val} ج.م\n💳 طريقة التحصيل: ${pay}\n\nسوف يصلك الطلب في خلال 45 دقيقة بإذن الله ⏳\n\nيمكنك متابعة طلبك من خلال الرابط التالي:\n${trackingLink}`;
+                const waMessage = `أهلاً بك يا ${client} في إكسبريس للتوصيل 👋\n\n✅ تم استلام طلبك بنجاح.\n\n📦 رقم الطلب: #${orderId}\n💰 المبلغ المطلوب: ${val} ج.م\n💳 طريقة التحصيل: ${pay}\n\nسوف يصلك الطلب في خلال 45 دقيقة بإذن الله ⏳\n\nيمكنك متابعة طلبك من خلال الرابط التالي: https://bit.ly/3Q6X9YL\n${trackingLink}`;
                 
                 const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(waMessage)}`;
                 setTimeout(() => { window.open(waUrl, '_blank'); }, 600);

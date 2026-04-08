@@ -8,6 +8,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- مكتبة تصدير الإكسيل SheetJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -52,7 +56,7 @@
         #usr-phone-container { display: none; }
         
         .table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        table { min-width: 800px; }
+        table { min-width: 1000px; /* زيادة العرض للجدول المفصل */ }
     </style>
 </head>
 <body class="antialiased text-slate-800">
@@ -224,7 +228,12 @@
                     <div class="table-container">
                         <table class="w-full text-sm text-right">
                             <thead class="bg-slate-50 text-slate-500 border-b border-slate-200">
-                                <tr><th class="p-4 font-black whitespace-nowrap">اسم الفرع</th><th class="p-4 font-black whitespace-nowrap">كود الفرع</th><th class="p-4 font-black text-center whitespace-nowrap">إجراءات</th></tr>
+                                <tr>
+                                    <th class="p-4 font-black whitespace-nowrap">اسم الفرع</th>
+                                    <th class="p-4 font-black whitespace-nowrap">كود الفرع</th>
+                                    <th class="p-4 font-black whitespace-nowrap">رقم التواصل (الفرع)</th>
+                                    <th class="p-4 font-black text-center whitespace-nowrap">إجراءات</th>
+                                </tr>
                             </thead>
                             <tbody id="branches-table-body" class="divide-y divide-slate-100 bg-white"></tbody>
                         </table>
@@ -299,23 +308,39 @@
                 </div>
             </section>
 
-            <!-- Reports -->
+            <!-- Reports (Updated for Extreme Details) -->
             <section id="view-reports" class="hidden space-y-6 animate-fade-in">
-                <header>
-                    <h2 class="text-2xl font-black text-slate-800">السجل العام والتقارير</h2>
-                    <p class="text-slate-500 mt-1 text-sm font-bold">سجل شامل للطلبات وإمكانية فتح خرائط مواقع العملاء</p>
+                <header class="mb-2">
+                    <h2 class="text-2xl md:text-3xl font-black text-slate-800">السجل العام والتقارير</h2>
+                    <p class="text-slate-500 mt-1 text-sm font-bold">سجل شامل ومفصل للطلبات مع إمكانية التصدير والبحث</p>
                 </header>
                 
-                <div class="card overflow-hidden hidden lg:block">
+                <!-- Filter Bar -->
+                <div class="flex flex-col lg:flex-row gap-3 bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex-1 relative">
+                        <i class="fa-solid fa-magnifying-glass absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="report-search" placeholder="بحث برقم الطلب، العميل، الهاتف، أو المندوب..." class="w-full pr-11 pl-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-sm transition">
+                    </div>
+                    <div class="w-full lg:w-48 relative">
+                        <input type="date" id="report-date" class="w-full py-3 px-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-sm text-slate-600 transition cursor-pointer">
+                    </div>
+                    <button onclick="exportToExcel()" class="w-full lg:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-black transition flex items-center justify-center gap-2 shadow-md">
+                        <i class="fa-solid fa-file-excel text-lg"></i> تصدير إكسيل
+                    </button>
+                </div>
+
+                <!-- Desktop Table -->
+                <div class="card overflow-hidden hidden xl:block">
                     <div class="table-container">
-                        <table class="w-full text-sm text-right">
+                        <table class="w-full text-sm text-right border-collapse">
                             <thead class="bg-slate-800 text-white">
                                 <tr>
-                                    <th class="p-4 font-black whitespace-nowrap rounded-tr-xl">الطلب / الفرع</th>
-                                    <th class="p-4 font-black whitespace-nowrap">الزمن (تحضير/توصيل)</th>
-                                    <th class="p-4 font-black whitespace-nowrap">المندوب</th>
-                                    <th class="p-4 font-black whitespace-nowrap text-center">الموقع الجغرافي</th>
-                                    <th class="p-4 font-black whitespace-nowrap">الحالة والتحصيل</th>
+                                    <th class="p-4 font-black whitespace-nowrap rounded-tr-xl border-b border-slate-700">الطلب وتاريخه</th>
+                                    <th class="p-4 font-black whitespace-nowrap border-b border-slate-700">بيانات العميل</th>
+                                    <th class="p-4 font-black whitespace-nowrap border-b border-slate-700">المندوب</th>
+                                    <th class="p-4 font-black whitespace-nowrap border-b border-slate-700 text-center">أزمنة التشغيل</th>
+                                    <th class="p-4 font-black whitespace-nowrap border-b border-slate-700">البيانات المالية</th>
+                                    <th class="p-4 font-black whitespace-nowrap rounded-tl-xl border-b border-slate-700 text-center">الموقع والملاحظات</th>
                                 </tr>
                             </thead>
                             <tbody id="reports-table-body" class="divide-y divide-slate-100 bg-white"></tbody>
@@ -323,7 +348,8 @@
                     </div>
                 </div>
 
-                <div id="reports-mobile-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 lg:hidden">
+                <!-- Mobile & Tablet Grid -->
+                <div id="reports-mobile-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 xl:hidden">
                 </div>
             </section>
         </main>
@@ -360,7 +386,7 @@
         </div>
     </div>
 
-    <!-- User Modal (Updated for Edit) -->
+    <!-- User Modal -->
     <div id="user-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="bg-white w-full max-w-md rounded-[2rem] p-6 shadow-2xl transform scale-95 transition-transform duration-300 max-h-[90vh] overflow-y-auto" id="user-modal-content">
             <div class="flex justify-between items-center mb-6 sticky top-0 bg-white z-10 pb-2 border-b border-slate-100">
@@ -388,7 +414,7 @@
         </div>
     </div>
 
-    <!-- Branch Modal (Updated for Edit) -->
+    <!-- Branch Modal -->
     <div id="branch-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl transform scale-95 transition-transform duration-300" id="branch-modal-content">
             <div class="flex justify-between items-center mb-6"><h3 id="branch-modal-title" class="text-xl font-black text-slate-800">إضافة فرع</h3><button type="button" onclick="closeModal('branch-modal')" class="w-8 h-8 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button></div>
@@ -399,12 +425,14 @@
                     <div><label class="block text-xs font-bold text-slate-500 mb-1">كود الفرع</label><input type="text" id="br-code" class="w-full bg-slate-50 border p-3 rounded-xl font-mono text-center font-bold" required></div>
                     <div><label class="block text-xs font-bold text-slate-500 mb-1">كلمة مرور الفرع</label><input type="text" id="br-password" class="w-full bg-slate-50 border p-3 rounded-xl font-bold" required></div>
                 </div>
+                <div><label class="block text-xs font-bold text-slate-500 mb-1">رقم هاتف / واتساب الفرع</label><input type="tel" id="br-phone" class="w-full bg-slate-50 border p-3 rounded-xl font-bold dir-ltr text-left" placeholder="01xxxxxxxxx"></div>
+                
                 <button type="submit" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-lg">حفظ الفرع</button>
             </form>
         </div>
     </div>
 
-    <!-- Add/Edit Order Modal (Updated with Notes) -->
+    <!-- Add/Edit Order Modal -->
     <div id="add-order-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="bg-white w-full max-w-2xl rounded-[2rem] p-6 shadow-2xl transform scale-95 transition-transform duration-300 max-h-[95vh] overflow-y-auto" id="add-order-modal-content">
             <div class="flex justify-between items-center mb-6 sticky top-0 bg-white z-10 pb-2 border-b border-slate-100"><h3 id="order-modal-title" class="text-xl font-black text-slate-800">بيانات الطلب</h3><button type="button" onclick="closeModal('add-order-modal')" class="w-8 h-8 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button></div>
@@ -424,7 +452,7 @@
                             <option value="انستاباي">تحويل انستاباي</option><option value="محفظة">تحويل محفظة</option>
                         </select>
                     </div>
-                    <!-- حقل الملاحظات الجديد -->
+                    <!-- حقل الملاحظات -->
                     <div class="col-span-1 md:col-span-2">
                         <label class="block text-xs font-bold text-slate-500 mb-1">ملاحظات الطلب (تظهر للمندوب والفرع)</label>
                         <textarea id="ord-notes" rows="2" class="w-full bg-slate-50 border border-amber-200 p-3 rounded-xl font-bold focus:ring-2 focus:ring-amber-500 outline-none transition" placeholder="اكتب أي ملاحظة هامة هنا..."></textarea>
@@ -476,7 +504,7 @@
         </div>
     </div>
 
-    <!-- Driver Smart Confirm Modal (NEW) -->
+    <!-- Driver Smart Confirm Modal -->
     <div id="driver-confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl transform scale-95 transition-transform duration-300" id="driver-confirm-modal-content">
             <div class="flex justify-between items-center mb-6">
@@ -486,14 +514,24 @@
             <form id="form-driver-confirm" class="space-y-4">
                 <input type="hidden" id="drv-ord-id">
                 
-                <!-- تحذير التحويلات -->
                 <div id="drv-transfer-warning" class="hidden bg-orange-50 border border-orange-200 p-4 rounded-xl text-center">
                     <i class="fa-solid fa-triangle-exclamation text-orange-500 text-3xl mb-2 animate-bounce"></i>
                     <p class="text-base font-black text-orange-800 mb-1">تنبيه هام جداً!</p>
                     <p class="text-xs font-bold text-orange-700 leading-relaxed">التحصيل عبر (تحويل بنكي / محفظة).<br>يجب التأكد من الفرع أن المبلغ قد تم تحويله بنجاح قبل الضغط على إنهاء التوصيل.</p>
                 </div>
 
-                <!-- حاسبة الكاش -->
+                <div id="drv-branch-contact" class="hidden flex items-center justify-between bg-blue-50 border border-blue-200 p-3 rounded-xl">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-bold text-blue-500">للتأكيد والتواصل مع الفرع</span>
+                        <span id="drv-branch-name" class="text-sm font-black text-blue-800"></span>
+                        <span id="drv-branch-phone" class="text-xs font-bold text-blue-600 dir-ltr mt-0.5"></span>
+                    </div>
+                    <div class="flex gap-2">
+                        <a href="#" id="btn-call-branch" class="w-10 h-10 bg-white border border-blue-200 text-blue-600 rounded-full flex items-center justify-center shadow-sm hover:bg-blue-600 hover:text-white hover:border-blue-600 transition"><i class="fa-solid fa-phone"></i></a>
+                        <a href="#" id="btn-wa-branch" target="_blank" class="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center shadow-sm hover:bg-green-600 transition"><i class="fa-brands fa-whatsapp text-lg"></i></a>
+                    </div>
+                </div>
+
                 <div id="drv-cash-calculator" class="hidden space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <div class="flex justify-between items-center mb-2 pb-2 border-b border-slate-200">
                         <span class="text-sm font-bold text-slate-500">حساب العميل (المطلوب):</span>
@@ -579,7 +617,7 @@
             const toast = document.createElement('div');
             const colorClass = type === 'success' ? 'bg-slate-800' : 'bg-red-600';
             const icon = type === 'success' ? 'fa-circle-check text-green-400' : 'fa-triangle-exclamation text-white';
-            toast.className = `${colorClass} text-white px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-3 transform transition-all duration-300 translate-y-[-20px] opacity-0 text-sm font-bold border border-slate-700`;
+            toast.className = `${colorClass} text-white px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-3 transform transition-all duration-300 translate-y-[-20px] opacity-0 text-sm font-bold border border-slate-700 z-[9999]`;
             toast.innerHTML = `<i class="fa-solid ${icon} text-lg"></i> ${msg}`;
             container.appendChild(toast);
             requestAnimationFrame(() => toast.classList.remove('translate-y-[-20px]', 'opacity-0'));
@@ -766,22 +804,29 @@
             `).join('');
         };
 
-        // ================= CRUD Branches & Users (Updated for Edit) =================
+        // ================= CRUD Branches & Users =================
         window.openBranchModal = () => { 
             document.getElementById('form-branch').reset(); document.getElementById('br-id').value = ''; 
+            document.getElementById('br-phone').value = ''; 
             document.getElementById('branch-modal-title').innerText = 'إضافة فرع'; openModal('branch-modal'); 
         };
         window.editBranch = (id) => {
             const b = allBranches.find(x => x.id === id); if(!b) return;
             document.getElementById('br-id').value = id; document.getElementById('br-name').value = b.name; 
             document.getElementById('br-code').value = b.code; document.getElementById('br-password').value = b.password;
+            document.getElementById('br-phone').value = b.phone || ''; 
             document.getElementById('branch-modal-title').innerText = 'تعديل بيانات الفرع';
             openModal('branch-modal');
         };
         document.getElementById('form-branch').addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('br-id').value;
-            const data = { name: document.getElementById('br-name').value, code: document.getElementById('br-code').value, password: document.getElementById('br-password').value };
+            const data = { 
+                name: document.getElementById('br-name').value, 
+                code: document.getElementById('br-code').value, 
+                password: document.getElementById('br-password').value,
+                phone: document.getElementById('br-phone').value 
+            };
             if(id) { await update(ref(db, `branches/${id}`), data); showToast('تم تعديل الفرع'); } 
             else { await push(ref(db, 'branches'), data); showToast('تم إضافة الفرع بنجاح'); }
             closeModal('branch-modal');
@@ -807,7 +852,7 @@
                 name: document.getElementById('usr-name').value, code: document.getElementById('usr-code').value, 
                 password: document.getElementById('usr-pass').value, role: document.getElementById('usr-role').value, 
                 branch: document.getElementById('usr-branch').value, phone: document.getElementById('usr-phone').value,
-                isActive: true // Keep active state by default
+                isActive: true 
             };
             if(id) { await update(ref(db, `users/${id}`), data); showToast('تم تعديل بيانات الموظف'); } 
             else { await push(ref(db, 'users'), data); showToast('تم إضافة الموظف بنجاح'); }
@@ -820,6 +865,7 @@
                 <tr class="hover:bg-slate-50 border-b border-slate-100 transition">
                     <td class="p-4 font-black">${b.name}</td>
                     <td class="p-4 font-bold font-mono text-blue-600">${b.code}</td>
+                    <td class="p-4 dir-ltr text-right font-bold text-slate-500">${b.phone || '-'}</td>
                     <td class="p-4 text-center space-x-2 space-x-reverse">
                         <button onclick="editBranch('${b.id}')" class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition"><i class="fa-solid fa-pen text-xs"></i></button>
                         <button class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-slate-200 transition" onclick="alert('للحذف النهائي يرجى التواصل مع الدعم الفني')"><i class="fa-solid fa-trash text-xs"></i></button>
@@ -841,7 +887,7 @@
                 </tr>`).join('');
         };
 
-        // ================= Orders CRUD (Updated for Notes & WhatsApp) =================
+        // ================= Orders CRUD =================
         window.openAddOrderModal = () => {
             document.getElementById('form-order').reset(); document.getElementById('ord-dbid').value = '';
             document.getElementById('order-modal-title').innerText = 'إضافة طلب جديد';
@@ -874,18 +920,14 @@
                 await push(ref(db, 'orders'), orderData);
                 showToast('تم إضافة الطلب وإرسال إشعار للعميل');
                 
-                // --- WhatsApp Message Logic ---
                 let waPhone = clientPhone.trim();
-                // Format phone number correctly for Egypt (Add country code if missing)
                 if (waPhone.startsWith('0')) { waPhone = '2' + waPhone; }
                 else if (!waPhone.startsWith('20') && waPhone.length === 10) { waPhone = '20' + waPhone; }
 
-                const trackingLink = ""; // الرابط فارغ لتقوم بوضعه مستقبلاً
+                const trackingLink = ""; 
                 const waMessage = `أهلاً بك يا ${client} في إكسبريس للتوصيل 👋\n\n✅ تم استلام طلبك بنجاح.\n\n📦 رقم الطلب: #${orderId}\n💰 المبلغ المطلوب: ${val} ج.م\n💳 طريقة التحصيل: ${pay}\n\nسوف يصلك الطلب في خلال 45 دقيقة بإذن الله ⏳\n\nيمكنك متابعة طلبك من خلال الرابط التالي:\n${trackingLink}`;
                 
                 const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(waMessage)}`;
-                
-                // Open WhatsApp in new tab after a brief delay to ensure Firebase save completes smoothly visually
                 setTimeout(() => { window.open(waUrl, '_blank'); }, 600);
             }
             closeModal('add-order-modal');
@@ -950,7 +992,7 @@
             showToast('تم التحصيل وإغلاق الطلب!'); closeModal('cashier-modal');
         });
 
-        // ================= Delivery & Smart Confirm System (NEW) =================
+        // ================= Delivery & Smart Confirm System =================
         const renderDeliveryList = () => {
             const list = document.getElementById('delivery-list');
             if(!list) return;
@@ -981,33 +1023,47 @@
             const warningBox = document.getElementById('drv-transfer-warning');
             const calcBox = document.getElementById('drv-cash-calculator');
             const inputField = document.getElementById('drv-received-amount');
+            const contactBox = document.getElementById('drv-branch-contact');
+
+            const branchObj = allBranches.find(b => b.name === o.branch);
+            if (branchObj && branchObj.phone) {
+                document.getElementById('drv-branch-name').innerText = `فرع ${branchObj.name}`;
+                document.getElementById('drv-branch-phone').innerText = branchObj.phone;
+                document.getElementById('btn-call-branch').href = `tel:${branchObj.phone}`;
+                
+                let waPhone = branchObj.phone.trim();
+                if (waPhone.startsWith('0')) { waPhone = '2' + waPhone; }
+                else if (!waPhone.startsWith('20') && waPhone.length === 10) { waPhone = '20' + waPhone; }
+                
+                const waMsg = `مرحباً فرع ${branchObj.name}، أنا المندوب بخصوص الطلب #${o.orderId}`;
+                document.getElementById('btn-wa-branch').href = `https://wa.me/${waPhone}?text=${encodeURIComponent(waMsg)}`;
+                contactBox.classList.remove('hidden');
+            } else {
+                contactBox.classList.add('hidden');
+            }
 
             if (['انستاباي', 'محفظة'].includes(o.pay)) {
-                // Show transfer warning, hide calculator
                 warningBox.classList.remove('hidden');
                 calcBox.classList.add('hidden');
                 inputField.removeAttribute('required');
             } else {
-                // Show calculator, hide warning
                 warningBox.classList.add('hidden');
                 calcBox.classList.remove('hidden');
                 document.getElementById('drv-required-amount').innerText = o.val;
                 inputField.setAttribute('required', 'true');
-                inputField.dataset.requiredVal = o.val; // Store required amount for math
+                inputField.dataset.requiredVal = o.val; 
             }
             openModal('driver-confirm-modal');
         };
 
-        // Realtime Change Calculator
         document.getElementById('drv-received-amount').addEventListener('input', (e) => {
             const required = parseFloat(e.target.dataset.requiredVal) || 0;
             const received = parseFloat(e.target.value) || 0;
             let change = received - required;
-            if (change < 0) change = 0; // Don't show negative change
+            if (change < 0) change = 0; 
             document.getElementById('drv-change-amount').innerText = change;
         });
 
-        // Driver Submit & Geo Location
         document.getElementById('form-driver-confirm').addEventListener('submit', (e) => {
             e.preventDefault();
             const id = document.getElementById('drv-ord-id').value;
@@ -1036,68 +1092,223 @@
             await update(ref(db, `users/${currentUser.id}`), { isActive: e.target.checked }); showToast(e.target.checked ? 'متصل ومستعد' : 'تسجيل خروج'); 
         });
 
-        // ================= Reports & Displays =================
-        const formatTimeDiff = (start, end) => {
-            if (!start || !end) return '<span class="text-slate-300">-</span>';
+        // ================= Advanced Reports & Excel Export =================
+        const formatDetailedTime = (timestamp) => {
+            if (!timestamp) return '--';
+            const d = new Date(timestamp);
+            return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
+        };
+        const formatDateObj = (timestamp) => {
+            if (!timestamp) return '--';
+            const d = new Date(timestamp);
+            return d.toLocaleDateString('ar-EG', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        }
+
+        const calcDurationStr = (start, end) => {
+            if (!start || !end) return '<span class="text-slate-400 font-normal">--</span>';
             const diffMin = Math.floor((end - start) / 60000);
             if (diffMin < 0) return '--';
             if (diffMin < 60) return `<span class="text-blue-600 font-black">${diffMin} دقيقة</span>`;
             return `<span class="text-orange-600 font-black">${Math.floor(diffMin/60)}س و ${diffMin%60}د</span>`;
         };
 
-        const renderReports = () => {
+        // Function to get filtered data for both UI and Excel
+        const getFilteredReportsData = () => {
+            const searchTerm = document.getElementById('report-search')?.value.toLowerCase() || '';
+            const dateFilter = document.getElementById('report-date')?.value;
+
             let reportsData = allOrders;
-            if (currentUser.role !== 'manager') reportsData = reportsData.filter(o => o.branch === currentUser.branch);
+            // Filter by branch if not manager
+            if (currentUser.role !== 'manager') {
+                reportsData = reportsData.filter(o => o.branch === currentUser.branch);
+            }
+
+            // Apply Search & Date Filters
+            return reportsData.filter(o => {
+                let dateMatch = true;
+                if (dateFilter) {
+                    const orderDate = new Date(o.ts);
+                    const filterD = new Date(dateFilter);
+                    dateMatch = orderDate.toDateString() === filterD.toDateString();
+                }
+
+                let searchMatch = true;
+                if (searchTerm) {
+                    const driver = allUsers.find(u => u.id === o.deliveryId);
+                    const drvName = driver ? driver.name.toLowerCase() : '';
+                    const drvCode = driver ? driver.code.toLowerCase() : '';
+                    
+                    searchMatch = (
+                        o.orderId.toLowerCase().includes(searchTerm) ||
+                        o.client.toLowerCase().includes(searchTerm) ||
+                        (o.clientPhone && o.clientPhone.includes(searchTerm)) ||
+                        drvName.includes(searchTerm) ||
+                        drvCode.includes(searchTerm)
+                    );
+                }
+                return dateMatch && searchMatch;
+            });
+        };
+
+        const renderReports = () => {
+            const reportsData = getFilteredReportsData();
 
             const tableBodyHtml = reportsData.map(o => {
-                const driverName = allUsers.find(u=>u.id===o.deliveryId)?.name || '--';
-                const locLink = o.deliveryLocation ? 
-                    `<a href="https://www.google.com/maps/search/?api=1&query=${o.deliveryLocation.lat},${o.deliveryLocation.lng}" target="_blank" class="inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white border border-emerald-200 px-4 py-2 rounded-xl font-black transition text-xs shadow-sm" title="فتح خرائط جوجل">
-                        <i class="fa-solid fa-map-location-dot"></i> الدخول للموقع
-                    </a>` 
-                    : '<span class="text-slate-400 font-bold text-xs bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100"><i class="fa-solid fa-location-crosshairs"></i> غير متوفر</span>';
+                const driver = allUsers.find(u=>u.id===o.deliveryId);
+                const driverName = driver?.name || '--';
+                const driverPhone = driver?.phone || '--';
                 
-                const prepTime = formatTimeDiff(o.ts, o.tsOut);
-                const delTime = formatTimeDiff(o.tsOut, o.tsDelivered);
-                const payInfo = o.status === 'settled' ? `<div class="text-xs text-slate-500 mt-1">${o.payDetails||''}</div>` : '';
+                const locLink = o.deliveryLocation ? 
+                    `<a href="https://www.google.com/maps/search/?api=1&query=${o.deliveryLocation.lat},${o.deliveryLocation.lng}" target="_blank" class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white border border-emerald-200 px-3 py-1.5 rounded-lg font-bold transition text-[11px] shadow-sm w-full justify-center mb-1">
+                        <i class="fa-solid fa-map-location-dot"></i> فتح خريطة العميل
+                    </a>` 
+                    : '<span class="block text-center text-slate-400 font-bold text-[10px] bg-slate-50 px-2 py-1 rounded border border-slate-100 mb-1"><i class="fa-solid fa-location-crosshairs"></i> موقع غير مسجل</span>';
+                
+                const prepDuration = calcDurationStr(o.ts, o.tsOut);
+                const delDuration = calcDurationStr(o.tsOut, o.tsDelivered);
+                
+                let finStatus = '';
+                if(o.status === 'settled') {
+                    finStatus = `<div class="mt-1 text-[10px] bg-green-50 text-green-700 p-1 rounded border border-green-100">تم التحصيل: <b>${o.finalPayMethod}</b><br><span class="text-slate-500">${o.payDetails||''}</span></div>`;
+                }
+
+                const notesHtml = o.notes ? `<div class="mt-1 text-[10px] bg-amber-50 text-amber-700 p-1 rounded border border-amber-100 max-w-[200px] whitespace-normal line-clamp-2" title="${o.notes}"><i class="fa-solid fa-note-sticky ml-1"></i>${o.notes}</div>` : '';
 
                 return `
-                <tr class="hover:bg-slate-50 border-b border-slate-50 transition">
-                    <td class="p-4">
-                        <span class="font-black text-lg block">#${o.orderId}</span>
-                        <span class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded mt-1 inline-block">${o.branch}</span>
+                <tr class="hover:bg-slate-50 border-b border-slate-100 transition">
+                    <td class="p-4 align-top">
+                        <div class="flex flex-col gap-1">
+                            <span class="font-black text-blue-600 text-lg block">#${o.orderId}</span>
+                            <span class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded w-max inline-block"><i class="fa-solid fa-store ml-1"></i>${o.branch}</span>
+                            <span class="text-[10px] font-bold text-slate-400">${formatDateObj(o.ts)} | ${formatDetailedTime(o.ts)}</span>
+                            <div class="mt-1"><span class="status-badge ${getStatusColor(o.status)} text-[10px]">${getStatusLabel(o.status)}</span></div>
+                        </div>
                     </td>
-                    <td class="p-4 text-sm"><div class="flex flex-col gap-1"><span class="bg-slate-50 px-2 py-1 rounded">تحضير: ${prepTime}</span><span class="bg-blue-50 px-2 py-1 rounded">توصيل: ${delTime}</span></div></td>
-                    <td class="p-4 text-sm font-black">${driverName}</td>
-                    <td class="p-4 text-center">${locLink}</td>
-                    <td class="p-4"><div class="flex flex-col gap-1 items-end"><span class="status-badge ${getStatusColor(o.status)}">${getStatusLabel(o.status)}</span><span class="font-black text-green-600 text-lg">${o.status === 'settled' ? o.collectedVal : o.val} ج.م</span>${payInfo}</div></td>
+                    <td class="p-4 align-top text-sm">
+                        <div class="flex flex-col gap-1">
+                            <span class="font-black text-slate-800">${o.client}</span>
+                            <span class="text-xs text-blue-600 dir-ltr font-bold"><i class="fa-brands fa-whatsapp text-green-500 ml-1"></i>${o.clientPhone}</span>
+                            <span class="text-xs text-slate-500 font-bold mt-1 bg-slate-50 p-1 rounded w-max max-w-[200px] truncate" title="${o.area}"><i class="fa-solid fa-location-dot ml-1 text-slate-400"></i>${o.area}</span>
+                        </div>
+                    </td>
+                    <td class="p-4 align-top text-sm">
+                        <div class="flex flex-col gap-1">
+                            <span class="font-black text-purple-700">${driverName}</span>
+                            <span class="text-[10px] text-slate-500 dir-ltr font-bold">${driverPhone}</span>
+                        </div>
+                    </td>
+                    <td class="p-4 align-top text-xs text-center">
+                        <div class="flex flex-col gap-2 items-center">
+                            <div class="bg-yellow-50 border border-yellow-100 px-2 py-1 rounded text-[10px] w-full text-right"><span class="text-slate-500 block mb-0.5">وقت التحضير</span>${prepDuration}</div>
+                            <div class="bg-purple-50 border border-purple-100 px-2 py-1 rounded text-[10px] w-full text-right"><span class="text-slate-500 block mb-0.5">وقت التوصيل</span>${delDuration}</div>
+                        </div>
+                    </td>
+                    <td class="p-4 align-top">
+                        <div class="flex flex-col">
+                            <div class="flex justify-between items-center mb-1"><span class="text-[10px] text-slate-500">المطلوب (${o.pay}):</span> <span class="font-black text-slate-800 text-sm">${o.val} ج.م</span></div>
+                            ${o.status === 'settled' ? `<div class="flex justify-between items-center border-t border-slate-100 pt-1 mt-1"><span class="text-[10px] text-green-600 font-bold">المحصل الفعلي:</span> <span class="font-black text-green-700 text-sm">${o.collectedVal} ج.م</span></div>` : ''}
+                            ${finStatus}
+                        </div>
+                    </td>
+                    <td class="p-4 align-top text-center w-48">
+                        ${locLink}
+                        ${notesHtml}
+                    </td>
                 </tr>`
             }).join('');
 
+            // Mobile view generation
             const mobileCardsHtml = reportsData.map(o => {
-                const driverName = allUsers.find(u=>u.id===o.deliveryId)?.name || '--';
-                const locLink = o.deliveryLocation ? 
-                    `<a href="https://www.google.com/maps/search/?api=1&query=${o.deliveryLocation.lat},${o.deliveryLocation.lng}" target="_blank" class="w-full flex justify-center items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white shadow-md px-3 py-3 rounded-xl font-black transition mt-4 text-sm">
-                        <i class="fa-solid fa-map-location-dot text-lg"></i> الدخول إلى موقع العميل
-                    </a>` 
-                    : '<div class="w-full text-center text-slate-400 font-bold text-xs mt-4 bg-slate-50 py-3 rounded-xl border border-slate-100"><i class="fa-solid fa-location-crosshairs"></i> موقع غير متوفر</div>';
+                const driver = allUsers.find(u=>u.id===o.deliveryId);
+                const driverName = driver?.name || '--';
+                
+                const locLink = o.deliveryLocation ? `<a href="https://www.google.com/maps/search/?api=1&query=${o.deliveryLocation.lat},${o.deliveryLocation.lng}" target="_blank" class="w-full flex justify-center items-center gap-1 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white border border-emerald-200 py-2 rounded-lg font-bold transition text-xs shadow-sm mt-3"><i class="fa-solid fa-map-location-dot"></i> فتح خريطة العميل</a>` : '';
 
                 return `
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                    <div class="flex justify-between items-center mb-3 pb-3 border-b border-slate-100"><span class="font-black text-lg text-slate-800">#${o.orderId}</span><span class="status-badge ${getStatusColor(o.status)}">${getStatusLabel(o.status)}</span></div>
-                    <div class="grid grid-cols-2 gap-3 mb-3 text-sm">
-                        <div class="bg-slate-50 p-2 rounded-lg text-center"><span class="block text-xs text-slate-400 mb-1">الفرع</span><span class="font-bold text-slate-700">${o.branch}</span></div>
-                        <div class="bg-slate-50 p-2 rounded-lg text-center"><span class="block text-xs text-slate-400 mb-1">المندوب</span><span class="font-bold text-slate-700">${driverName}</span></div>
+                    <div class="flex justify-between items-start mb-3 pb-3 border-b border-slate-100">
+                        <div><span class="font-black text-lg text-blue-600">#${o.orderId}</span><span class="text-[10px] text-slate-400 block">${formatDateObj(o.ts)}</span></div>
+                        <span class="status-badge ${getStatusColor(o.status)}">${getStatusLabel(o.status)}</span>
                     </div>
-                    <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-50"><span class="text-sm font-bold text-slate-500">مبلغ التحصيل:</span><span class="font-black text-xl text-green-600">${o.status === 'settled' ? o.collectedVal : o.val} ج.م</span></div>
+                    
+                    <div class="space-y-2 mb-3">
+                        <div class="flex justify-between text-sm"><span class="text-slate-500 font-bold">العميل:</span><span class="font-black text-slate-800">${o.client}</span></div>
+                        <div class="flex justify-between text-sm"><span class="text-slate-500 font-bold">الفرع:</span><span class="font-bold text-slate-700 bg-slate-50 px-2 rounded">${o.branch}</span></div>
+                        <div class="flex justify-between text-sm"><span class="text-slate-500 font-bold">المندوب:</span><span class="font-bold text-purple-700">${driverName}</span></div>
+                        <div class="flex justify-between text-sm"><span class="text-slate-500 font-bold">وقت التوصيل:</span><span class="font-bold">${calcDurationStr(o.tsOut, o.tsDelivered)}</span></div>
+                    </div>
+
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-500">المبلغ ${o.status === 'settled'?'المحصل':'المطلوب'}:</span><span class="font-black text-lg text-green-600">${o.status === 'settled' ? o.collectedVal : o.val} ج.م</span></div>
+                        ${o.status === 'settled' ? `<div class="text-[10px] text-slate-500 mt-1">عبر: ${o.finalPayMethod} ${o.payDetails ? `(${o.payDetails})`:''}</div>`:''}
+                    </div>
                     ${locLink}
                 </div>`
             }).join('');
 
             const tbody = document.getElementById('reports-table-body');
-            if(tbody) tbody.innerHTML = reportsData.length ? tableBodyHtml : '<tr><td colspan="5" class="p-8 text-center text-slate-400 font-bold">لا توجد تقارير متاحة</td></tr>';
+            if(tbody) tbody.innerHTML = reportsData.length ? tableBodyHtml : '<tr><td colspan="6" class="p-12 text-center text-slate-400 font-bold text-lg">لا توجد نتائج تطابق بحثك</td></tr>';
             const mobileGrid = document.getElementById('reports-mobile-grid');
             if(mobileGrid) mobileGrid.innerHTML = reportsData.length ? mobileCardsHtml : '<div class="col-span-full p-8 text-center text-slate-400 font-bold bg-white rounded-2xl border border-slate-200">لا توجد تقارير متاحة</div>';
+        };
+
+        // Attach event listeners to filters
+        document.getElementById('report-search')?.addEventListener('input', renderReports);
+        document.getElementById('report-date')?.addEventListener('change', renderReports);
+
+        // Excel Export Functionality using SheetJS
+        window.exportToExcel = () => {
+            const dataToExport = getFilteredReportsData();
+            if (dataToExport.length === 0) return showToast('لا توجد بيانات لتصديرها', 'error');
+            
+            showLoader('جاري تجهيز ملف الإكسيل...');
+
+            setTimeout(() => {
+                // Map the raw data to nicely formatted Arabic headers for Excel
+                const excelData = dataToExport.map(o => {
+                    const driver = allUsers.find(u=>u.id===o.deliveryId);
+                    
+                    // Calculate exact minutes for export
+                    let prepMins = '', delMins = '';
+                    if(o.ts && o.tsOut) prepMins = Math.floor((o.tsOut - o.ts) / 60000);
+                    if(o.tsOut && o.tsDelivered) delMins = Math.floor((o.tsDelivered - o.tsOut) / 60000);
+
+                    return {
+                        'رقم الطلب': o.orderId,
+                        'تاريخ الطلب': formatDateObj(o.ts),
+                        'وقت الإنشاء': formatDetailedTime(o.ts),
+                        'الفرع': o.branch,
+                        'اسم العميل': o.client,
+                        'هاتف العميل': o.clientPhone,
+                        'منطقة التوصيل': o.area,
+                        'اسم المندوب': driver?.name || 'غير محدد',
+                        'كود المندوب': driver?.code || '',
+                        'وقت التحضير (دقيقة)': prepMins,
+                        'وقت التوصيل (دقيقة)': delMins,
+                        'الحالة الحالية': getStatusLabel(o.status),
+                        'طريقة الدفع (المتوقعة)': o.pay,
+                        'المبلغ (المطلوب)': o.val,
+                        'طريقة الدفع (الفعلية)': o.finalPayMethod || '',
+                        'المبلغ المحصل الفعلي': o.collectedVal || '',
+                        'تفاصيل الدفع (رقم حساب/باتش)': o.payDetails || '',
+                        'رابط خريطة العميل': o.deliveryLocation ? `https://www.google.com/maps/search/?api=1&query=${o.deliveryLocation.lat},${o.deliveryLocation.lng}` : 'غير متوفر',
+                        'ملاحظات الطلب': o.notes || ''
+                    };
+                });
+
+                  // Create Worksheet
+                const ws = XLSX.utils.json_to_sheet(excelData);
+                // Create Workbook
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "سجل الطلبات");
+                
+                // Trigger Download
+                const fileName = `تقارير_إكسبريس_${new Date().toLocaleDateString('en-GB').replace(/\//g, '-')}.xlsx`;
+                XLSX.writeFile(wb, fileName);
+                
+                hideLoader();
+                showToast('تم تصدير التقرير بنجاح!');
+            }, 500); // Small delay to allow UI to show loader
         };
 
         const renderStats = () => {
@@ -1117,6 +1328,31 @@
             grid.innerHTML = f.length === 0 ? '<div class="col-span-full p-8 text-center text-slate-400 font-bold bg-slate-50 rounded-2xl">فارغ</div>' : f.map(o => {
                 const availableDel = allUsers.filter(u => u.role === 'delivery' && u.isActive && (u.branch === o.branch || currentUser.role === 'manager'));
                 const notesHtml = o.notes ? `<div class="mt-2 bg-amber-50 text-amber-700 text-xs font-bold p-2 rounded border border-amber-100 line-clamp-2"><i class="fa-solid fa-note-sticky ml-1"></i>${o.notes}</div>` : '';
+                
+                let driverInfoHtml = '';
+                if (o.status === 'out') {
+                    const driver = allUsers.find(u => u.id === o.deliveryId);
+                    if (driver) {
+                        let waDriverPhone = (driver.phone || '').trim();
+                        if (waDriverPhone && waDriverPhone.startsWith('0')) waDriverPhone = '2' + waDriverPhone;
+                        
+                        const contactBtns = driver.phone ? `
+                            <div class="flex gap-2 mt-2">
+                                <a href="tel:${driver.phone}" class="flex-1 bg-white border border-purple-200 text-purple-600 text-center py-1.5 rounded-lg text-[11px] font-black hover:bg-purple-600 hover:text-white transition shadow-sm"><i class="fa-solid fa-phone"></i> اتصال</a>
+                                <a href="https://wa.me/${waDriverPhone}" target="_blank" class="flex-1 bg-green-500 border border-green-500 text-white text-center py-1.5 rounded-lg text-[11px] font-black hover:bg-green-600 transition shadow-sm"><i class="fa-brands fa-whatsapp text-sm"></i> واتساب</a>
+                            </div>` : '<div class="text-xs text-center text-purple-400 mt-1">لا يوجد رقم هاتف مسجل للمندوب</div>';
+
+                        driverInfoHtml = `
+                            <div class="mt-3 bg-purple-50 p-3 rounded-xl border border-purple-100 flex flex-col gap-1 shadow-inner">
+                                <div class="flex justify-between items-center text-purple-800 border-b border-purple-100 pb-2">
+                                    <span class="text-sm font-black"><i class="fa-solid fa-motorcycle ml-1"></i>${driver.name}</span>
+                                    <span class="text-xs font-bold dir-ltr bg-purple-100 px-2 py-0.5 rounded">${driver.phone || 'بدون رقم'}</span>
+                                </div>
+                                ${contactBtns}
+                            </div>`;
+                    }
+                }
+
                 return `
                 <div class="card p-4 relative border-t-4 ${o.status==='pending'?'border-yellow-400':(o.status==='out'?'border-purple-500':'border-green-500')}">
                     <div class="flex justify-between items-start mb-2">
@@ -1125,14 +1361,14 @@
                     </div>
                     <div class="bg-slate-50 p-2 rounded-lg text-sm mb-2"><p class="font-bold truncate"><i class="fa-solid fa-location-dot text-slate-400 ml-1"></i>${o.area}</p></div>
                     ${notesHtml}
-                    ${o.status === 'pending' ? `<div class="mt-2 pt-2 border-t border-slate-100"><select id="del-${o.id}" class="w-full text-xs bg-slate-50 border p-2 rounded mb-2 font-bold"><option value="">-- تفويض مندوب --</option>${availableDel.map(d=>`<option value="${d.id}">${d.name}</option>`).join('')}</select><button onclick="dispatchOrder('${o.id}')" class="w-full bg-slate-800 text-white text-xs font-black py-2 rounded">إرسال للتوصيل</button></div>` : (o.status === 'out' ? `<div class="mt-2 bg-purple-50 p-2 rounded text-xs text-purple-700 text-center font-black">المندوب: ${allUsers.find(u=>u.id===o.deliveryId)?.name}</div>` : '')}
+                    ${o.status === 'pending' ? `<div class="mt-2 pt-2 border-t border-slate-100"><select id="del-${o.id}" class="w-full text-xs bg-slate-50 border p-2 rounded mb-2 font-bold outline-none focus:ring-2 focus:ring-slate-300"><option value="">-- تفويض مندوب للتوصيل --</option>${availableDel.map(d=>`<option value="${d.id}">${d.name}</option>`).join('')}</select><button onclick="dispatchOrder('${o.id}')" class="w-full bg-slate-800 text-white text-xs font-black py-2 rounded hover:bg-slate-700 transition">إرسال العهدة للمندوب</button></div>` : driverInfoHtml}
                 </div>`
             }).join('');
         };
 
         window.dispatchOrder = async (id) => { 
-            const delId = document.getElementById(`del-${id}`).value; if (!delId) return showToast('اختر مندوب أولاً', 'error'); 
-            await update(ref(db, `orders/${id}`), { status: 'out', deliveryId: delId, tsOut: Date.now() }); showToast('تم تسليم العهدة');
+            const delId = document.getElementById(`del-${id}`).value; if (!delId) return showToast('الرجاء اختيار المندوب أولاً', 'error'); 
+            await update(ref(db, `orders/${id}`), { status: 'out', deliveryId: delId, tsOut: Date.now() }); showToast('تم تسليم العهدة للمندوب بنجاح');
         };
         window.setOrderTab = (t) => { orderTab = t; const ac = 'flex-1 py-2.5 text-sm font-bold rounded-lg transition bg-blue-600 text-white shadow-sm', inC = 'flex-1 py-2.5 text-sm font-bold rounded-lg transition text-slate-500 hover:bg-slate-50'; document.getElementById('tab-active').className = t==='active'?ac:inC; document.getElementById('tab-done').className = t==='done'?ac:inC; renderOrdersGrid(); };
         document.getElementById('branch-filter-select').addEventListener('change', renderOrdersGrid);
@@ -1149,4 +1385,3 @@
     </script>
 </body>
 </html>
-
